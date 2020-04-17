@@ -3,7 +3,6 @@ __save_results
 api_tasks
 __archived
 */__archived
-data
 
 data/graphviz
 data_embedding
@@ -19,7 +18,7 @@ __save_results/*
 api_tasks/*
 __archived/*
 
-data/*
+data/graphviz/*
 data_graphs/*
 data_embedding/*
 data_json/*
