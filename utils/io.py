@@ -25,8 +25,11 @@ def save_checkpoint(model, save_path=''):
     torch.save(model.state_dict(), os.path.join(save_path))
 
 
-def load_checkpoint(model, load_path=''):
-    model.load_state_dict(torch.load(load_path))
+def load_checkpoint(model, load_path='', cuda=True):
+    if cuda is True:
+        model.load_state_dict(torch.load(load_path))
+    else:
+        model.load_state_dict(torch.load(load_path, map_location=lambda storage, loc: storage))
     return model
 
 

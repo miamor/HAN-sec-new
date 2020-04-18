@@ -139,7 +139,7 @@ class App:
 
     def train(self, save_path='', k_fold=10, train_list_file=None, test_list_file=None):
         if self.pretrained_weight is not None:
-            self.model = load_checkpoint(self.model, self.pretrained_weight)
+            self.model = load_checkpoint(self.model, self.pretrained_weight, self.is_cuda)
         save_dir = save_path.split('/checkpoint')[0]
 
         loss_fcn = torch.nn.MSELoss()
@@ -334,7 +334,7 @@ class App:
         
         try:
             print('*** Load pre-trained model '+model_path+' ***')
-            self.model = load_checkpoint(self.model, model_path)
+            self.model = load_checkpoint(self.model, model_path, self.is_cuda)
         except ValueError as e:
             print('Error while loading the model.', e)
 
@@ -361,7 +361,7 @@ class App:
         
         try:
             print('*** Load pre-trained model '+model_path+' ***')
-            self.model = load_checkpoint(self.model, model_path)
+            self.model = load_checkpoint(self.model, model_path, self.is_cuda)
         except ValueError as e:
             print('Error while loading the model.', e)
 

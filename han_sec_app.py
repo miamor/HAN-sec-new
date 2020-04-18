@@ -181,7 +181,7 @@ class App:
     def predict(self, model_path=''):
         try:
             print('*** Load pre-trained model '+model_path+' ***')
-            self.model = load_checkpoint(self.model, model_path)
+            self.model = load_checkpoint(self.model, model_path, self.is_cuda)
         except ValueError as e:
             print('Error while loading the model.', e)
 

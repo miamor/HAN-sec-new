@@ -32,7 +32,7 @@ def load_dataset(args, cuda):
     data = prep_data.load_data(from_folder=args['from_report_folder'],
                                from_json=args['from_data_json'],
                                from_pickle=args['from_pickle'])
-    data = to_cuda(data) if cuda else data
+    data = to_cuda(data) if cuda is True else data
     return data
 
 
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--config_fpath",
                         default='models/config/config_edGNN_graph_class.json')
 
-    parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu")
+    parser.add_argument("-g", "--gpu", type=int, default=-1, help="gpu")
 
     parser.add_argument("action", choices={'train', 'test', 'test_data', 'prep'})
 

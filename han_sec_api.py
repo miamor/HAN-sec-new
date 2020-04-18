@@ -1,4 +1,4 @@
-__ROOT__ = '/media/fitmta/Storage/MinhTu/HAN_sec_new'
+__ROOT__ = '/home/mtaav/CODE/HAN_sec_new'
 import sys
 sys.path.insert(0, __ROOT__)
 from utils.prep_data import PrepareData
@@ -9,8 +9,8 @@ from han_sec_app import App
 
 # CONFIG_PATH = __ROOT__+'/__save_results/gat_nw__8593__1629__cuckoo_ADung__iapi__vocablower_iapi_new__edge-doc2vec_node-tfidf/config_gat__iapi__edge-doc2vec_node-tfidf_test_data.json'
 
-# CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn__9271__1111__vocablower_iapi_n__tfidf/edgnn_model_test_data.json' # use this
-CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn_w__8958__815__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
+CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn__9271__1111__vocablower_iapi_n__tfidf/edgnn_model_test_data.json' # use this
+# CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn_w__8958__815__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 
 # CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn_w__9219__1778__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 # CONFIG_PATH = __ROOT__+'/__save_results/reverse__merge__edgnn_w__8854__963__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
@@ -18,7 +18,7 @@ CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn_w__8958__815__vocablower_
 # CONFIG_PATH = __ROOT__+'/__save_results/reverse__merge__edgnn_w__9167__1556__vocablower_iapi_m__tfidf__topk=2/edgnn_model_test_data.json'
 __REVERSE_EDGE__ = True
 __APPEND_NID_EID__ = True
-__DO_DRAW__ = True
+__DO_DRAW__ = False
 
 def prepare_files(task_ids=None, cuda=True):
     args = read_params(CONFIG_PATH, verbose=False)
@@ -57,7 +57,7 @@ def prepare_files(task_ids=None, cuda=True):
     if data is None:
         return None, args
     
-    data = to_cuda(data) if cuda else data
+    data = to_cuda(data) if cuda is True else data
     return data, args
 
 
@@ -97,12 +97,14 @@ if __name__ == "__main__":
     # data, args = prepare_files([132, 133, 136, 140]) # 1 ok
     # data, args = prepare_files([112, 118, 123,  132, 133, 136, 140]) 
 
-    data, args = prepare_files([161,162,163]) # doc
+    # data, args = prepare_files([161,162,163]) # doc
 
-    data, args = prepare_files([-2])
+    cuda = False
+
+    data, args = prepare_files([4], cuda)
 
     if data is None:
         print('Graph can\'t be created!')
     else:
-        labels, scores = predict_files(data, args)
+        labels, scores = predict_files(data, args, cuda)
         print(labels, scores)

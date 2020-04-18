@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from utils.word_embedding import TFIDF, Doc2Vec_
 
 class PrepareData(object):
-    cuckoo_analysis_dir = '/home/fitmta/.cuckoo/storage/analyses'
+    cuckoo_analysis_dir = '/home/mtaav/.cuckoo/storage/analyses'
     DATA_OUT_PATH = ''  # data root dir
     # folder contains pickle file (save data in dortmund format)
     pickle_folder = ''
@@ -467,7 +467,7 @@ class PrepareData(object):
     def gen_node_name_embedding_data(self):
         # print('\t gen_node_name_embedding_data', node_name)
         # print('self.node_names_by_graph', len(self.node_names_by_graph))
-        print('self.node_names_by_graph', self.node_names_by_graph)
+        # print('self.node_names_by_graph', self.node_names_by_graph)
         for graph_name in self.node_names_by_graph:
             label = graph_name.split('__')[0]
             nodes_names = ' '.join(self.node_names_by_graph[graph_name])
@@ -1278,6 +1278,7 @@ class PrepareData(object):
 
                     # self.graphs_viz[g_name].render(filename='data/graphviz/{}/{}'.format(os.path.basename(self.reports_parent_dir_path), g_name))
 
+                    print('Write dot to {}/{}/{}'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name))
                     nx.drawing.nx_pydot.write_dot(self.graphs_viz[g_name], '{}/{}/{}'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name))
 
                     (graph,) = pydot.graph_from_dot_file('{}/{}/{}'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name))
