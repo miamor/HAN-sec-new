@@ -15,7 +15,7 @@ import os
 
 # from models import GraphAttention
 
-from utils.prep_data_n import PrepareData
+# from utils.prep_data_n import PrepareData
 
 from utils.inits import to_cuda
 from utils.io import print_graph_stats, read_params, create_default_path, remove_model
@@ -25,9 +25,18 @@ from app import App
 from utils.constants import *
 import time
 import shutil
+import sys
 
 
 def load_dataset(args, cuda):
+    if 'prep_path' in config_params and config_params['prep_path'] is not None:
+        sys.path.insert(0, config_params['prep_path'])
+        print('*** prep path', config_params['prep_path'])
+        from prep_data_n import PrepareData
+    else:
+        from utils.prep_data_n import PrepareData
+
+
     prep_data = PrepareData(args)
     data = prep_data.load_data(from_folder=args['from_report_folder'],
                                from_json=args['from_data_json'],
@@ -79,7 +88,10 @@ def run_app(args, data, cuda):
         shutil.copy(src='main.py', dst=odir+'/main.py')
         shutil.copy(src='app.py', dst=odir+'/app.py')
         ''' train '''
-        app.train(default_path, k_fold=args['k_fold'], train_list_file=args['train_list_file'], test_list_file=args['test_list_file'])
+        if 'train_list_file' in args:
+            app.train(default_path, k_fold=args['k_fold'], train_list_file=args['train_list_file'], test_list_file=args['test_list_file'])
+        else:
+            app.train(default_path, k_fold=args['k_fold'])
         app.test(default_path)
         # remove_model(default_path)
 
@@ -188,6 +200,12 @@ if __name__ == "__main__":
     if 'prepend_vocab' in config_params and not config_params['prepend_vocab'] and not config_params['vocab_path']:
         raise AssertionError('prepend_vocab (-pv) cannot be off when no vocab_path is parsed (-v)')
 
+
+    if 'models/configs' not in config_params['config_fpath']:
+        config_params['prep_path'] = os.path.dirname(config_params['config_fpath'])
+    else:
+        config_params['prep_path'] = None
+    
 
     ###########################
     # Load data

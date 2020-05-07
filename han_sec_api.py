@@ -1,7 +1,7 @@
-__ROOT__ = '/home/mtaav/CODE/HAN_sec_new'
+__ROOT__ = '/media/fitmta/Storage/MinhTu/HAN_sec_new'
 import sys
 sys.path.insert(0, __ROOT__)
-from utils.prep_data import PrepareData
+import os
 from utils.inits import to_cuda
 from utils.io import print_graph_stats, read_params, create_default_path, remove_model
 from utils.constants import *
@@ -9,13 +9,23 @@ from han_sec_app import App
 
 # CONFIG_PATH = __ROOT__+'/__save_results/gat_nw__8593__1629__cuckoo_ADung__iapi__vocablower_iapi_new__edge-doc2vec_node-tfidf/config_gat__iapi__edge-doc2vec_node-tfidf_test_data.json'
 
-CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn__9271__1111__vocablower_iapi_n__tfidf/edgnn_model_test_data.json' # use this
+# CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn__9271__1111__vocablower_iapi_n__tfidf/edgnn_model_test_data.json' # use this
 # CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn_w__8958__815__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 
 # CONFIG_PATH = __ROOT__+'/__save_results/reverse__edgnn_w__9219__1778__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 # CONFIG_PATH = __ROOT__+'/__save_results/reverse__merge__edgnn_w__8854__963__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 
 # CONFIG_PATH = __ROOT__+'/__save_results/reverse__merge__edgnn_w__9167__1556__vocablower_iapi_m__tfidf__topk=2/edgnn_model_test_data.json'
+# from utils.prep_data import PrepareData
+
+
+# newest -----------------
+CONFIG_PATH = __ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+prep_path = os.path.dirname(CONFIG_PATH)
+print('prep_path', prep_path)
+sys.path.insert(0, prep_path)
+from prep_data_n import PrepareData
+
 __REVERSE_EDGE__ = True
 __APPEND_NID_EID__ = True
 __DO_DRAW__ = False
@@ -86,6 +96,8 @@ def predict_files(data, args, cuda=True):
 
 
 if __name__ == "__main__":
+    cuda = True
+
     # data, args = prepare_files([16,17,18,19,20,21,22,23,24,25,26,27,28,29])
     # data, args = prepare_files([99,100,101,102,103,   22,23,24,25,26,27,28,29,   50,51,52,53,54,55,56])
     # data, args = prepare_files([31]) # should output [1,0]
@@ -99,9 +111,7 @@ if __name__ == "__main__":
 
     # data, args = prepare_files([161,162,163]) # doc
 
-    cuda = False
-
-    data, args = prepare_files([4], cuda)
+    data, args = prepare_files([164,165,166,167,168], cuda) # 0,1,1,1,1
 
     if data is None:
         print('Graph can\'t be created!')

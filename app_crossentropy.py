@@ -398,21 +398,21 @@ class App:
         batches = dgl.batch(graphs)
         acc, _, logits = self.model.eval_graph_classification(labels, batches)
         _, indices = torch.max(logits, dim=1)
-        labels = labels.cpu()
-        indices = indices.cpu()
+        labels_cpu = labels.cpu()
+        indices_cpu = indices.cpu()
         # print('labels', labels)
         # print('indices', indices)
         # labels_txt = ['malware', 'benign']
             
-        cm = confusion_matrix(y_true=labels, y_pred=indices)
+        cm = confusion_matrix(y_true=labels_cpu, y_pred=indices_cpu)
         print(cm)
-        print('Total samples', len(labels))
+        print('Total samples', len(labels_cpu))
         
         if len(self.mapping) == 2:
             lbl_mal = self.mapping['malware']
             lbl_bng = self.mapping['benign']
-            n_mal = (labels == lbl_mal).sum().item()
-            n_bgn = (labels == lbl_bng).sum().item()
+            n_mal = (labels_cpu == lbl_mal).sum().item()
+            n_bgn = (labels_cpu == lbl_bng).sum().item()
             tpr = cm[lbl_mal][lbl_mal]/n_mal * 100 # actual malware that is correctly detected as malware
             far = cm[lbl_bng][lbl_mal]/n_bgn * 100  # benign that is incorrectly labeled as malware
             print('TPR', tpr)

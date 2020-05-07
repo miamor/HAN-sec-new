@@ -32,7 +32,7 @@ ACTIVATIONS = {
 
 class Model(nn.Module):
 
-    type_weight = 6.0
+    type_weight = 4.0
 
     edge_features_use = 'all'
     node_features_use = 'all'
@@ -301,6 +301,9 @@ class Model(nn.Module):
     def eval_graph_classification(self, labels, testing_graphs):
         self.eval()
         loss_fcn = torch.nn.CrossEntropyLoss()
+
+        if self.is_cuda is False:
+            labels = labels.cpu()
 
         with torch.no_grad():
             logits = self(testing_graphs)

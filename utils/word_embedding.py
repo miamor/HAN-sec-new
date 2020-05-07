@@ -457,6 +457,7 @@ class TFIDF(WordEmbedding):
             x_test = [text for text, label in test_data]
             y_test = [label for text, label in test_data]
 
+            # print('x_train', x_train)
             self.tfidf.fit(x_train)
             x_transformed = self.test_on_set('Train~', x_train, y_train, self.tfidf, model)
             self.test_on_set('Test~', x_test, y_test, self.tfidf, model)

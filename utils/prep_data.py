@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from utils.word_embedding import TFIDF, Doc2Vec_
 
 class PrepareData(object):
-    cuckoo_analysis_dir = '/home/mtaav/.cuckoo/storage/analyses'
+    cuckoo_analysis_dir = '/home/fitmta/.cuckoo/storage/analyses'
     DATA_OUT_PATH = ''  # data root dir
     # folder contains pickle file (save data in dortmund format)
     pickle_folder = ''
@@ -256,7 +256,7 @@ class PrepareData(object):
         self.from_folder = from_folder
         if from_pickle is True:
             print('\nTrain & load node/edge embedding')
-            # self.train_and_load_embedding()
+            self.train_and_load_embedding()
 
             print('Load data from pickle folder')
             self.load_from_pickle()
