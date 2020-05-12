@@ -101,7 +101,11 @@ if __name__ == "__main__":
 
     cuda = False
 
-    data, args = prepare_files([4], cuda)
+    data, args = prepare_files([4], cuda) # VirusShare_0d93334c773fb884da7b536d89de2962__PE
+    data, args = prepare_files([5], cuda) # VirusShare_0cfd0c18dfea446bf2ebd7e80d047b8a__nullsoft_0.65
+    data, args = prepare_files([6], cuda) # VirusShare_0a7684ed716f2bc360990115b781cc8f__trojan__PE__0.58
+    data, args = prepare_files([7], cuda) # Microsoft.Build.Conversion.v4.0.dll
+    data, args = prepare_files([8], cuda) # Microsoft.Build.Tasks.v4.0.dll
 
     if data is None:
         print('Graph can\'t be created!')
