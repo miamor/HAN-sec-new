@@ -256,7 +256,7 @@ class PrepareData(object):
         self.from_folder = from_folder
         if from_pickle is True:
             print('\nTrain & load node/edge embedding')
-            # self.train_and_load_embedding()
+            self.train_and_load_embedding()
 
             print('Load data from pickle folder')
             self.load_from_pickle()
