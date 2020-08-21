@@ -362,7 +362,7 @@ class TFIDF(WordEmbedding):
 
     def __init__(self, emb_trained_path, emb_corpus_path, mapping, max_ft, top_k):
         super(TFIDF, self).__init__(emb_trained_path, emb_corpus_path, mapping)
-        print('max_ft', max_ft)
+        # print('max_ft', max_ft)
         if max_ft is None or max_ft <= 0:
             raise AssertionError("max_ft must be set and > 0")
         if top_k is None or top_k <= 0:

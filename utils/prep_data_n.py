@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from utils.word_embedding import TFIDF, Doc2Vec_
 
 class PrepareData(object):
-    cuckoo_analysis_dir = '/home/fitmta/.cuckoo/storage/analyses'
+    cuckoo_analysis_dir = '/home/mtaav/.cuckoo/storage/analyses'
     DATA_OUT_PATH = ''  # data root dir
     # folder contains pickle file (save data in dortmund format)
     pickle_folder = ''
@@ -121,7 +121,7 @@ class PrepareData(object):
             data_dir = os.path.dirname(self.final_json_path)
             if not os.path.isdir(data_dir):
                 os.makedirs(data_dir)
-                
+            
             json_data_dir = self.final_json_path
             if not os.path.isdir(json_data_dir):
                 os.makedirs(json_data_dir)
@@ -337,7 +337,7 @@ class PrepareData(object):
                 print('behavior none. Skip '+report_dir_name+'/'+report_file_name)
         else:
             for task_id in task_ids:
-                report_dir_name = task_id
+                report_dir_name = str(task_id)
                 report_path = '{}/{}/reports/{}'.format(self.cuckoo_analysis_dir, report_dir_name, report_file_name)
 
                 print('report_file_name', report_dir_name+'/'+report_file_name)
@@ -444,12 +444,12 @@ class PrepareData(object):
 
             if len(flags[flag_key]) > 0:
                 if isinstance(flags[flag_key], list):
-                    print('flags', flags, 'flag_key', flag_key, 'flags[flag_key]', flags[flag_key])
+                    # print('flags', flags, 'flag_key', flag_key, 'flags[flag_key]', flags[flag_key])
                     
                     flag_data = flag_key
                     append = False
                     for v in flags[flag_key]:
-                        print('\t v', v)
+                        # print('\t v', v)
                         if v is not None:
                             flag_data += ' ' + v.replace('|', ' ').lower()
                             append = True
@@ -1008,7 +1008,7 @@ class PrepareData(object):
         name_transformed = self.node_embedder.transform(self.nodename_to_str(node['name']))
         # name_transformed = indices_to_one_hot(
         #     self.node_name_code[self.nodename_to_str(node['name'])], out_vec_size=len(self.node_name_code))
-        print('self.node_name_code', self.node_name_code)
+        # print('self.node_name_code', self.node_name_code)
         cbow_node = torch.tensor(name_transformed).type(torch.FloatTensor)
         ndata[GNN_NODE_LABELS_KEY] = cbow_node.view(1, -1)
 
@@ -1083,6 +1083,7 @@ class PrepareData(object):
         ''' add edge with data to graph '''
         # print("path['graph']", path['graph'])
         # print(self.graphs_dict[path['graph']].number_of_nodes())
+        print('self.graphs_dict.keys()', self.graphs_dict.keys())
         self.graphs_dict[path['graph']].add_edge(path['from_in_graph'], path['to_in_graph'], data=edata)
         if len(self.args_to_str(path['args'])) > 0:
             # self.graphs_viz[path['graph']].edge('n{}'.format(path['from_in_graph']), 'n{}'.format(path['to_in_graph']), label='{}'.format(self.args_to_str(path['args'])))
@@ -1475,7 +1476,7 @@ class PrepareData(object):
             return txt.split('{')[0]
 
         if txt.split('{')[0] not in self.interesting_apis:
-            print('Not in interesting_apis. Convert from {} to other'.format(txt))
+            # print('Not in interesting_apis. Convert from {} to other'.format(txt))
             return 'other'
 
         return txt.split('{')[0]

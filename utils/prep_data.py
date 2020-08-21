@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from utils.word_embedding import TFIDF, Doc2Vec_
 
 class PrepareData(object):
-    cuckoo_analysis_dir = '/home/fitmta/.cuckoo/storage/analyses'
+    cuckoo_analysis_dir = '/home/mtaav/.cuckoo/storage/analyses'
     DATA_OUT_PATH = ''  # data root dir
     # folder contains pickle file (save data in dortmund format)
     pickle_folder = ''
