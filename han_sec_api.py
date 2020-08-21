@@ -1,26 +1,27 @@
 import config as cf
+# print('cf', cf)
 import sys
-sys.path.insert(0, cf.__HAN_ROOT__)
+sys.path.insert(0, cf.__ROOT__)
 import os
 from utils.inits import to_cuda
 from utils.io import print_graph_stats, read_params, create_default_path, remove_model
 from utils.constants import *
 from han_sec_app import App
 
-# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/gat_nw__8593__1629__cuckoo_ADung__iapi__vocablower_iapi_new__edge-doc2vec_node-tfidf/config_gat__iapi__edge-doc2vec_node-tfidf_test_data.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/gat_nw__8593__1629__cuckoo_ADung__iapi__vocablower_iapi_new__edge-doc2vec_node-tfidf/config_gat__iapi__edge-doc2vec_node-tfidf_test_data.json'
 
-# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__edgnn__9271__1111__vocablower_iapi_n__tfidf/edgnn_model_test_data.json' # use this
-# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__edgnn_w__8958__815__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__edgnn__9271__1111__vocablower_iapi_n__tfidf/edgnn_model_test_data.json' # use this
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__edgnn_w__8958__815__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 
-# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__edgnn_w__9219__1778__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
-# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__merge__edgnn_w__8854__963__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__edgnn_w__9219__1778__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__8854__963__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 
-# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__merge__edgnn_w__9167__1556__vocablower_iapi_m__tfidf__topk=2/edgnn_model_test_data.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9167__1556__vocablower_iapi_m__tfidf__topk=2/edgnn_model_test_data.json'
 # from utils.prep_data import PrepareData
 
 
 # newest -----------------
-CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
 prep_path = os.path.dirname(CONFIG_PATH)
 print('prep_path', prep_path)
 sys.path.insert(0, prep_path)
