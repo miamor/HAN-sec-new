@@ -1,26 +1,26 @@
 import config as cf
 import sys
-sys.path.insert(0, cf.__ROOT__)
+sys.path.insert(0, cf.__HAN_ROOT__)
 import os
 from utils.inits import to_cuda
 from utils.io import print_graph_stats, read_params, create_default_path, remove_model
 from utils.constants import *
 from han_sec_app import App
 
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/gat_nw__8593__1629__cuckoo_ADung__iapi__vocablower_iapi_new__edge-doc2vec_node-tfidf/config_gat__iapi__edge-doc2vec_node-tfidf_test_data.json'
+# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/gat_nw__8593__1629__cuckoo_ADung__iapi__vocablower_iapi_new__edge-doc2vec_node-tfidf/config_gat__iapi__edge-doc2vec_node-tfidf_test_data.json'
 
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__edgnn__9271__1111__vocablower_iapi_n__tfidf/edgnn_model_test_data.json' # use this
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__edgnn_w__8958__815__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
+# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__edgnn__9271__1111__vocablower_iapi_n__tfidf/edgnn_model_test_data.json' # use this
+# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__edgnn_w__8958__815__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__edgnn_w__9219__1778__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__8854__963__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
+# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__edgnn_w__9219__1778__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
+# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__merge__edgnn_w__8854__963__vocablower_iapi_n__tfidf/edgnn_model_test_data.json'
 
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9167__1556__vocablower_iapi_m__tfidf__topk=2/edgnn_model_test_data.json'
+# CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__merge__edgnn_w__9167__1556__vocablower_iapi_m__tfidf__topk=2/edgnn_model_test_data.json'
 # from utils.prep_data import PrepareData
 
 
 # newest -----------------
-CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+CONFIG_PATH = cf.__HAN_ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
 prep_path = os.path.dirname(CONFIG_PATH)
 print('prep_path', prep_path)
 sys.path.insert(0, prep_path)
@@ -38,15 +38,15 @@ def prepare_files(task_ids=None, cuda=True):
     if task_ids is not None:
         task_ids = [str(tid) for tid in task_ids]
         batch_task_name = '-'.join(task_ids)
-        args["input_report_folder"] = cf.__ROOT__+'/api_tasks/data_report'
-        args["input_data_folder"] = cf.__ROOT__+'/api_tasks/data_json/{}'.format(batch_task_name)
-        args["input_pickle_folder"] = cf.__ROOT__+'/api_tasks/data_pickle/{}'.format(batch_task_name)
+        args["input_report_folder"] = cf.__HAN_ROOT__+'/api_tasks/data_report'
+        args["input_data_folder"] = cf.__HAN_ROOT__+'/api_tasks/data_json/{}'.format(batch_task_name)
+        args["input_pickle_folder"] = cf.__HAN_ROOT__+'/api_tasks/data_pickle/{}'.format(batch_task_name)
     
-    args["mapping_path"] = cf.__ROOT__+'/'+args["mapping_path"]
-    args["train_embedding_path"] = cf.__ROOT__+'/'+args["train_embedding_path"]
-    args["vocab_path"] = cf.__ROOT__+'/'+args["vocab_path"]
+    args["mapping_path"] = cf.__HAN_ROOT__+'/'+args["mapping_path"]
+    args["train_embedding_path"] = cf.__HAN_ROOT__+'/'+args["train_embedding_path"]
+    args["vocab_path"] = cf.__HAN_ROOT__+'/'+args["vocab_path"]
 
-    args["graph_viz_dir"] = cf.__ROOT__+'/data/graphviz'
+    args["graph_viz_dir"] = cf.__HAN_ROOT__+'/data/graphviz'
 
     args["from_pickle"] = False
     args["from_report_folder"] = False
