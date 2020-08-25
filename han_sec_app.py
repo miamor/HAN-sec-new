@@ -42,7 +42,7 @@ class App:
 
     def __init__(self, data, model_config, learning_config, pretrained_weight, early_stopping=True, patience=100, json_path=None, pickle_folder=None, vocab_path=None, mapping_path=None, odir=None, model_src_path=None, append_nid_eid=False, gdot_path=None):
         if model_src_path is not None:
-            sys.path.insert(0, model_src_path)
+            sys.path.insert(1, model_src_path)
             print('*** model_src_path', model_src_path)
             from model_edgnn import Model
         else:
@@ -59,6 +59,7 @@ class App:
         with open(mapping_path, 'r') as f:
             self.mapping = json.load(f)
 
+        print('[App][__init__] GNAMES', GNAMES)
         self.graphs_names = self.data[GNAMES]
 
         self.data_graph = self.data[GRAPH]
@@ -106,28 +107,28 @@ class App:
             self.model.to(torch.device('cuda'))
 
 
-        print('*** Model parameters ***')
-        pp = 0
-        print('self.model', self.model)
+        # print('*** Model parameters ***')
+        # pp = 0
+        # print('self.model', self.model)
         
-        # self.e_src_attn_layer = self.model.edgnn_layers[1].e_src_attn_fc
-        # self.e_group_attn_layer = self.model.edgnn_layers[1].e_group_attn_fc
-        # # self.dst_attn_layer = self.model.edgnn_layers[1].dst_attn_fc
-        # print('self.e_group_attn_layer', self.e_group_attn_layer)
-        # print('self.e_src_attn_layer', self.e_src_attn_layer)
-        # # print('self.dst_attn_layer', self.dst_attn_layer)
-        # self.e_group_attn_layer.register_forward_hook(self.hook)
-        # self.e_src_attn_layer.register_forward_hook(self.hook2)
-        # self.dst_attn_layer.register_forward_hook(self.hook)
+        # # self.e_src_attn_layer = self.model.edgnn_layers[1].e_src_attn_fc
+        # # self.e_group_attn_layer = self.model.edgnn_layers[1].e_group_attn_fc
+        # # # self.dst_attn_layer = self.model.edgnn_layers[1].dst_attn_fc
+        # # print('self.e_group_attn_layer', self.e_group_attn_layer)
+        # # print('self.e_src_attn_layer', self.e_src_attn_layer)
+        # # # print('self.dst_attn_layer', self.dst_attn_layer)
+        # # self.e_group_attn_layer.register_forward_hook(self.hook)
+        # # self.e_src_attn_layer.register_forward_hook(self.hook2)
+        # # self.dst_attn_layer.register_forward_hook(self.hook)
 
-        for p in list(self.model.parameters()):
-            nn = 1
-            for s in list(p.size()):
-                # print('p', p)
-                print('\t s, nn, nn*s', s, nn, nn*s)
-                nn = nn*s
-            pp += nn
-        print('Total params', pp)
+        # for p in list(self.model.parameters()):
+        #     nn = 1
+        #     for s in list(p.size()):
+        #         # print('p', p)
+        #         # print('\t s, nn, nn*s', s, nn, nn*s)
+        #         nn = nn*s
+        #     pp += nn
+        # print('Total params', pp)
 
 
         if early_stopping:
@@ -189,7 +190,9 @@ class App:
         graphs = self.data[GRAPH]
         print('*** len graphs', len(graphs))
 
+        # print('[App][predict] graphs', graphs)
         batches = dgl.batch(graphs)
+        # print('[App][predict] batches', batches)
         
         # logits = self.model.classify(batches)
         self.model.eval()

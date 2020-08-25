@@ -1,7 +1,7 @@
 import config as cf
 # print('cf', cf)
 import sys
-sys.path.insert(0, cf.__ROOT__)
+sys.path.insert(1, cf.__ROOT__)
 import os
 from utils.inits import to_cuda
 from utils.io import print_graph_stats, read_params, create_default_path, remove_model
@@ -20,19 +20,39 @@ from han_sec_app import App
 # from utils.prep_data import PrepareData
 
 
-# newest -----------------
-CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+
+# test ----------------
+CONFIG_PATH = cf.__ROOT__+'/__save_results/ft_type+lbl__9266__666__cuckoo_ADung__iapi__vocablower_iapi__doc2vec/config_edGNN_graph_class_test_data.json'
+
 prep_path = os.path.dirname(CONFIG_PATH)
 print('prep_path', prep_path)
-sys.path.insert(0, prep_path)
-from prep_data_n import PrepareData
+sys.path.insert(2, prep_path)
+from prep_data import PrepareData
 
-__REVERSE_EDGE__ = True
-__APPEND_NID_EID__ = True
+
+__REVERSE_EDGE__ = False
+__APPEND_NID_EID__ = False
 __DO_DRAW__ = False
+# ----------------
+
+
+# newest -----------------
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+
+# prep_path = os.path.dirname(CONFIG_PATH)
+# print('prep_path', prep_path)
+# sys.path.insert(2, prep_path)
+# from prep_data_n import PrepareData
+
+# __REVERSE_EDGE__ = True
+# __APPEND_NID_EID__ = True
+# __DO_DRAW__ = False
+
+
 
 class HAN_module:
     def __init__(self, task_ids=None):
+        self.task_ids = task_ids
         self.load_args(task_ids)
         self.prep_data = PrepareData(self.args)
     
@@ -77,9 +97,12 @@ class HAN_module:
 
         self.args['checkpoint_file'] = self.odir+'/checkpoint'
 
+        print('\t self.args', self.args)
+        print('\t self.odir', self.odir)
 
-    def prepare_files(self, task_ids=None, cuda=True):
-        data = self.prep_data.load_data_files(task_ids)
+
+    def prepare_files(self, cuda=True):
+        data = self.prep_data.load_data_files(self.task_ids)
         if data is None:
             return None, self.args
         
@@ -103,32 +126,55 @@ class HAN_module:
 
 
 
-# if __name__ == "__main__":
-#     cuda = True
+if __name__ == "__main__":
+    # cuda = True
 
-#     # data, self.args = prepare_files([16,17,18,19,20,21,22,23,24,25,26,27,28,29])
-#     # data, self.args = prepare_files([99,100,101,102,103,   22,23,24,25,26,27,28,29,   50,51,52,53,54,55,56])
-#     # data, self.args = prepare_files([31]) # should output [1,0]
-#     # data, self.args = prepare_files([50,51,52,53,54,55,56]) # all 1
-#     # data, self.args = prepare_files([103])
-#     # data, self.args = prepare_files([99,100,101,102,103]) # all 0
+    # data, self.args = prepare_files([16,17,18,19,20,21,22,23,24,25,26,27,28,29])
+    # data, self.args = prepare_files([99,100,101,102,103,   22,23,24,25,26,27,28,29,   50,51,52,53,54,55,56])
+    # data, self.args = prepare_files([31]) # should output [1,0]
+    # data, self.args = prepare_files([50,51,52,53,54,55,56]) # all 1
+    # data, self.args = prepare_files([103])
+    # data, self.args = prepare_files([99,100,101,102,103]) # all 0
 
-#     # data, self.args = prepare_files([112, 118, 123]) # 0 ok
-#     # data, self.args = prepare_files([132, 133, 136, 140]) # 1 ok
-#     # data, self.args = prepare_files([112, 118, 123,  132, 133, 136, 140]) 
+    # data, self.args = prepare_files([112, 118, 123]) # 0 ok
+    # data, self.args = prepare_files([132, 133, 136, 140]) # 1 ok
+    # data, self.args = prepare_files([112, 118, 123,  132, 133, 136, 140]) 
 
-#     # data, self.args = prepare_files([161,162,163]) # doc
+    # data, self.args = prepare_files([161,162,163]) # doc
 
-#     cuda = False
+    # cuda = False
 
-#     data, self.args = prepare_files([4], cuda) # VirusShare_0d93334c773fb884da7b536d89de2962__PE
-#     data, self.args = prepare_files([5], cuda) # VirusShare_0cfd0c18dfea446bf2ebd7e80d047b8a__nullsoft_0.65
-#     data, self.args = prepare_files([6], cuda) # VirusShare_0a7684ed716f2bc360990115b781cc8f__trojan__PE__0.58
-#     data, self.args = prepare_files([7], cuda) # Microsoft.Build.Conversion.v4.0.dll
-#     data, self.args = prepare_files([8], cuda) # Microsoft.Build.Tasks.v4.0.dll
+    # data, self.args = prepare_files([4], cuda) # VirusShare_0d93334c773fb884da7b536d89de2962__PE
+    # data, self.args = prepare_files([5], cuda) # VirusShare_0cfd0c18dfea446bf2ebd7e80d047b8a__nullsoft_0.65
+    # data, self.args = prepare_files([6], cuda) # VirusShare_0a7684ed716f2bc360990115b781cc8f__trojan__PE__0.58
+    # data, self.args = prepare_files([7], cuda) # Microsoft.Build.Conversion.v4.0.dll
+    # data, self.args = prepare_files([8], cuda) # Microsoft.Build.Tasks.v4.0.dll
 
-#     if data is None:
-#         print('Graph can\'t be created!')
-#     else:
-#         labels, scores = predict_files(data, self.args, cuda)
-#         print(labels, scores)
+    # if data is None:
+    #     print('Graph can\'t be created!')
+    # else:
+    #     labels, scores = predict_files(data, self.args, cuda)
+    #     print(labels, scores)
+
+
+
+
+    # benigns
+    tasks = [1746, 1748, 1750, 1751, 1754, 1756]
+    # malware
+    tasks = [247, 303, 304, 310, 312, 1655, 1656, 1657, 1659, 1660]
+
+
+    tasks = [1746, 1748, 1750, 1751, 1754, 1756,
+            247, 303, 304, 310, 312, 1655, 1656, 1657, 1659, 1660]
+
+
+    han = HAN_module(task_ids=tasks)
+    cuda = False
+
+    data = han.prepare_files(cuda) # Microsoft.Build.Tasks.v4.0.dll
+    if data is None:
+        print('Graph can\'t be created!')
+    else:
+        labels, scores = han.predict_files(data, cuda)
+        print(labels, scores)
