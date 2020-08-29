@@ -170,7 +170,7 @@ if __name__ == "__main__":
 
 
     han = HAN_module(task_ids=tasks)
-    cuda = False
+    cuda = True
 
     data = han.prepare_files(cuda) # Microsoft.Build.Tasks.v4.0.dll
     if data is None:

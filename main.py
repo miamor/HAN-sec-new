@@ -34,7 +34,7 @@ def load_dataset(args, cuda):
         print('*** prep path', config_params['prep_path'])
         from prep_data_n import PrepareData
     else:
-        from utils.prep_data_n import PrepareData
+        from utils.prep_data_n_use import PrepareData
 
 
     prep_data = PrepareData(args)
@@ -159,6 +159,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-c", "--config_fpath",
                         default='models/config/config_edGNN_graph_class.json')
+    # __save_results/ft_type+lbl__9266__666__cuckoo_ADung__iapi__vocablower_iapi__doc2vec/game_Linh_none.json
 
     parser.add_argument("-g", "--gpu", type=int, default=-1, help="gpu")
 
@@ -211,6 +212,7 @@ if __name__ == "__main__":
     # Load data
     ###########################
     data_ = load_dataset(config_params, cuda)
+
 
     ###########################
     # Run the app

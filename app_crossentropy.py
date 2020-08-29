@@ -43,7 +43,7 @@ class App:
     def __init__(self, data, model_config, learning_config, pretrained_weight, early_stopping=True, patience=100, json_path=None, pickle_folder=None, vocab_path=None, mapping_path=None, odir=None, model_src_path=None):
         if model_src_path is not None:
             sys.path.insert(0, model_src_path)
-            print('*** model_src_path', model_src_path)
+            print('*** [app][__init__] model_src_path', model_src_path)
             from model_edgnn import Model
         else:
             from models.model import Model
@@ -100,15 +100,15 @@ class App:
                         #    vocab_path=vocab_path,
                            model_src_path=model_src_path)
 
-        print('>>> self.model', self.model)
+        print('>>> [app][__init__] self.model', self.model)
 
         if self.is_cuda is True:
             # self.model.cuda()
-            print('Use cuda')
+            print('[app][__init__] Use cuda')
             self.model.to(torch.device('cuda'))
 
 
-        print('*** Model parameters ***')
+        print('*** [app][__init__] Model parameters ***')
         pp=0
         for p in list(self.model.parameters()):
             nn=1
@@ -117,7 +117,7 @@ class App:
                 print('\t s, nn, nn*s', s, nn, nn*s)
                 nn = nn*s
             pp += nn
-        print('Total params', pp)
+        print('[app][__init__] Total params', pp)
 
 
         if early_stopping:
@@ -163,11 +163,11 @@ class App:
 
 
         split_train_test = True if train_list_file is None and test_list_file is None else False 
-        print('split_train_test', split_train_test)
+        print('[app][train] split_train_test', split_train_test)
 
         if split_train_test is True:
-            print('train_list_file', train_list_file)
-            print('test_list_file', test_list_file)
+            print('[app][train] train_list_file', train_list_file)
+            print('[app][train] test_list_file', test_list_file)
             #############################
             # Create new train/test set
             # Split train and test
@@ -250,7 +250,7 @@ class App:
 
             start = int(len(g_train)/K) * k
             end = int(len(g_train)/K) * (k+1)
-            print('\n\n\nProcess new k='+str(k)+' | '+str(start)+'-'+str(end))
+            print('\n\n\n[app][train] Process new k='+str(k)+' | '+str(start)+'-'+str(end))
 
             # testing batch
             val_batch_graphs = g_train[start:end]
@@ -268,11 +268,11 @@ class App:
                                           shuffle=True,
                                           collate_fn=collate)
 
-            print('train_batches size: ', len(train_batches))
-            print('train_batch_graphs size: ', len(train_batch_graphs))
-            print('val_batch_graphs size: ', len(val_batch_graphs))
-            print('train_batches', train_batches)
-            print('val_batch_labels', val_batch_labels)
+            print('[app][train] train_batches size: ', len(train_batches))
+            print('[app][train] train_batch_graphs size: ', len(train_batch_graphs))
+            print('[app][train] val_batch_graphs size: ', len(val_batch_graphs))
+            print('[app][train] train_batches', train_batches)
+            print('[app][train] val_batch_labels', val_batch_labels)
             
             dur = []
             for epoch in range(self.learning_config['epochs']):
@@ -291,7 +291,7 @@ class App:
                     _, indices = torch.max(logits, dim=1)
                     # print('~~~~ logits', logits)
                     # print('------------------')
-                    print('\t indices', indices)
+                    print('\t [app][train] indices', indices)
                     # print('\t label', label)
                     correct = torch.sum(indices == label)
                     training_accuracies.append(
@@ -306,7 +306,7 @@ class App:
                     dur.append(time.time() - t0)
 
                 val_acc, val_loss, _ = self.model.eval_graph_classification(val_batch_labels, val_batch)
-                print("Epoch {:05d} | Time(s) {:.4f} | train_acc {:.4f} | train_loss {:.4f} | val_acc {:.4f} | val_loss {:.4f}".format(
+                print("[app][train] Epoch {:05d} | Time(s) {:.4f} | train_acc {:.4f} | train_loss {:.4f} | val_acc {:.4f} | val_loss {:.4f}".format(
                     epoch, np.mean(dur) if dur else 0, np.mean(training_accuracies), np.mean(losses), val_acc, val_loss))
 
                 is_better = self.early_stopping(val_loss, self.model, save_path)
@@ -335,48 +335,48 @@ class App:
                     #     'val_loss': val_loss,
                     # }, save_dir+'/saved')
 
-                    print("Early stopping")
+                    print("[app][train] Early stopping")
                     break
 
             self.early_stopping.reset()
 
     def test(self, model_path=''):
-        print('Test model')
+        print('[app][test] Test model')
         
         try:
-            print('*** Load pre-trained model '+model_path+' ***')
+            print('*** [app][test] Load pre-trained model '+model_path+' ***')
             self.model = load_checkpoint(self.model, model_path, self.is_cuda)
         except ValueError as e:
-            print('Error while loading the model.', e)
+            print('[app][test] Error while loading the model.', e)
 
-        print('\nTest all')
+        print('\n[app][test] Test all')
         # acc = np.mean(self.accuracies)
         # acc = self.accuracies
         graphs = self.data[GRAPH]
         labels = self.labels
         self.run_test(graphs, labels)
                     
-        print('\nTest on train graphs')
+        print('\n[app][test] Test on train graphs')
         graphs = load_pickle(os.path.join(self.odir, 'train'))
         labels = load_pickle(os.path.join(self.odir, 'train_labels'))
         self.run_test(graphs, labels)
 
-        print('\nTest on test graphs')
+        print('\n[app][test] Test on test graphs')
         graphs = load_pickle(os.path.join(self.odir, 'test'))
         labels = load_pickle(os.path.join(self.odir, 'test_labels'))
         self.run_test(graphs, labels)
 
 
     def test_on_data(self, model_path=''):
-        print('Test model')
+        print('[app][test_on_data] Test model')
         
         try:
-            print('*** Load pre-trained model '+model_path+' ***')
+            print('*** [app][test_on_data] Load pre-trained model '+model_path+' ***')
             self.model = load_checkpoint(self.model, model_path, self.is_cuda)
         except ValueError as e:
             print('Error while loading the model.', e)
 
-        print('\nTest on data')
+        print('\n[app][test_on_data] Test on data')
         # acc = np.mean(self.accuracies)
         # acc = self.accuracies
         graphs = self.data[GRAPH]
@@ -404,9 +404,10 @@ class App:
         # print('indices', indices)
         # labels_txt = ['malware', 'benign']
             
+        print('[app][run_test] Total samples', len(labels_cpu))
         cm = confusion_matrix(y_true=labels_cpu, y_pred=indices_cpu)
+        print('[app][run_test] confusion_matrix:')
         print(cm)
-        print('Total samples', len(labels_cpu))
         
         if len(self.mapping) == 2:
             lbl_mal = self.mapping['malware']
@@ -415,8 +416,8 @@ class App:
             n_bgn = (labels_cpu == lbl_bng).sum().item()
             tpr = cm[lbl_mal][lbl_mal]/n_mal * 100 # actual malware that is correctly detected as malware
             far = cm[lbl_bng][lbl_mal]/n_bgn * 100  # benign that is incorrectly labeled as malware
-            print('TPR', tpr)
-            print('FAR', far)
+            print('[app][run_test] TPR', tpr)
+            print('[app][run_test] FAR', far, 'n_bgn', n_bgn)
 
         # fig = plt.figure()
         # ax = fig.add_subplot(111)
@@ -430,7 +431,7 @@ class App:
         # plt.show()
 
 
-        print("Accuracy {:.4f}".format(acc))
+        print("[app][run_test] Accuracy {:.4f}".format(acc))
         
         # acc = np.mean(self.accuracies)
 
