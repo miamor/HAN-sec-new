@@ -22,42 +22,47 @@ from han_sec_app import App
 
 
 # test ----------------
-CONFIG_PATH = cf.__ROOT__+'/__save_results/ft_type+lbl__9266__666__cuckoo_ADung__iapi__vocablower_iapi__doc2vec/config_edGNN_graph_class_test_data.json'
-
-prep_path = os.path.dirname(CONFIG_PATH)
-print('prep_path', prep_path)
-sys.path.insert(2, prep_path)
-from prep_data import PrepareData
-
-
-__REVERSE_EDGE__ = False
-__APPEND_NID_EID__ = False
-__DO_DRAW__ = False
-# ----------------
-
-
-# newest -----------------
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/ft_type+lbl__9266__666__cuckoo_ADung__iapi__vocablower_iapi__doc2vec/config_edGNN_graph_class_test_data.json'
 
 # prep_path = os.path.dirname(CONFIG_PATH)
 # print('prep_path', prep_path)
 # sys.path.insert(2, prep_path)
-# from prep_data_n import PrepareData
+# from prep_data import PrepareData
 
-# __REVERSE_EDGE__ = True
-# __APPEND_NID_EID__ = True
+
+# __REVERSE_EDGE__ = False
+# __APPEND_NID_EID__ = False
 # __DO_DRAW__ = False
+# ----------------
+
+
+# newest -----------------
+CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+
+prep_path = os.path.dirname(CONFIG_PATH)
+print('prep_path', prep_path)
+sys.path.insert(2, prep_path)
+from prep_data_n import PrepareData
+
+# Overwrite
+__REVERSE_EDGE__ = True
+__APPEND_NID_EID__ = True
+__DO_DRAW__ = True
 
 
 
 class HAN_module:
-    def __init__(self, task_ids=None):
+    def __init__(self, task_ids=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
         self.task_ids = task_ids
-        self.load_args(task_ids)
+        self.load_args(task_ids, report_dir_name, report_dir_path, report_file_name)
         self.prep_data = PrepareData(self.args)
     
-    def load_args(self, task_ids=None):
+    def load_args(self, task_ids=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
         self.args = read_params(CONFIG_PATH, verbose=False)
+
+        self.report_dir_name = report_dir_name
+        self.report_dir_path = report_dir_path
+        self.report_file_name = report_file_name
 
         self.args['config_fpath'] = CONFIG_PATH
 
@@ -67,16 +72,20 @@ class HAN_module:
             self.args["input_report_folder"] = cf.__ROOT__+'/api_tasks/data_report'
             self.args["input_data_folder"] = cf.__ROOT__+'/api_tasks/data_json/{}'.format(batch_task_name)
             self.args["input_pickle_folder"] = cf.__ROOT__+'/api_tasks/data_pickle/{}'.format(batch_task_name)
-        
+        else:
+            self.args["input_report_folder"] = cf.__ROOT__+'/api_tasks/data_report'
+            self.args["input_data_folder"] = cf.__ROOT__+'/api_tasks/data_json/{}'.format(report_dir_name)
+            self.args["input_pickle_folder"] = cf.__ROOT__+'/api_tasks/data_pickle/{}'.format(report_dir_name)
+
         self.args["mapping_path"] = cf.__ROOT__+'/'+self.args["mapping_path"]
         self.args["train_embedding_path"] = cf.__ROOT__+'/'+self.args["train_embedding_path"]
         self.args["vocab_path"] = cf.__ROOT__+'/'+self.args["vocab_path"]
 
-        self.args["graph_viz_dir"] = cf.__ROOT__+'/data/graphviz'
+        # self.args["graph_viz_dir"] = cf.__ROOT__+'/data_graphviz'
 
-        self.args["from_pickle"] = False
-        self.args["from_report_folder"] = False
-        self.args["from_data_json"] = False
+        # self.args["from_pickle"] = False
+        # self.args["from_folder"] = False
+        # self.args["from_json"] = False
         
         self.args["prepare_word_embedding"] = True
         self.args["train_embedder"] = False
@@ -97,12 +106,17 @@ class HAN_module:
 
         self.args['checkpoint_file'] = self.odir+'/checkpoint'
 
-        print('\t self.args', self.args)
-        print('\t self.odir', self.odir)
+        print('\t [load_args] self.args', self.args)
+        print('\t [load_args] self.odir', self.odir)
 
 
     def prepare_files(self, cuda=True):
-        data = self.prep_data.load_data_files(self.task_ids)
+        if self.task_ids is None:
+            data = self.prep_data.load_data_files(self.task_ids, report_dir_path=self.report_dir_path, report_dir_name=self.report_dir_name, report_file_name=self.report_file_name)
+        else:
+            data = self.prep_data.load_data_files(self.task_ids)
+        # data = self.prep_data.load_data()
+
         if data is None:
             return None, self.args
         
@@ -114,13 +128,16 @@ class HAN_module:
         print('\n*** Start testing ***\n')
         learning_config = {'cuda': cuda}
 
+        graphviz_dir_path = self.args["input_pickle_folder"].replace('data_pickle', 'data_graphviz')
+        gdot_path = None if self.args['do_draw'] is False else '{}/{}'.format(graphviz_dir_path, data[GNAMES][0])
+
         app = App(data, model_config=self.model_config, learning_config=learning_config,
-                pretrained_weight=self.args['checkpoint_file'], early_stopping=True, patience=20, 
-                json_path=self.args['input_data_folder'], pickle_folder=self.args['input_pickle_folder'], vocab_path=self.args['vocab_path'],
-                mapping_path=self.args['mapping_path'],
-                model_src_path=self.odir,
-                append_nid_eid=__APPEND_NID_EID__,
-                #   gdot_path='{}/data_report/{}'.format(self.args["graph_viz_dir"], data[GNAMES][0])
+                    pretrained_weight=self.args['checkpoint_file'], early_stopping=True, patience=20, 
+                    json_path=self.args['input_data_folder'], pickle_folder=self.args['input_pickle_folder'], vocab_path=self.args['vocab_path'],
+                    mapping_path=self.args['mapping_path'],
+                    model_src_path=self.odir,
+                    append_nid_eid=__APPEND_NID_EID__,
+                    gdot_path=gdot_path
                 )
         return app.predict(self.args['checkpoint_file'])
 
@@ -169,12 +186,15 @@ if __name__ == "__main__":
             247, 303, 304, 310, 312, 1655, 1656, 1657, 1659, 1660]
 
 
-    han = HAN_module(task_ids=tasks)
+    tasks = None
+
+    han = HAN_module(task_ids=tasks, report_dir_name='game_Linh', report_file_name=None)
     cuda = True
 
-    data = han.prepare_files(cuda) # Microsoft.Build.Tasks.v4.0.dll
+    data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
     if data is None:
         print('Graph can\'t be created!')
     else:
-        labels, scores = han.predict_files(data, cuda)
-        print(labels, scores)
+        labels, scores = han.predict_files(data, cuda=cuda)
+        print('labels', labels)
+        print('scores', scores)

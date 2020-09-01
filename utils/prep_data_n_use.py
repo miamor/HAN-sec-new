@@ -305,7 +305,7 @@ class PrepareData(object):
         return self.data_dortmund_format
 
 
-    def load_data_files(self, task_ids, report_file_name='report.json', write_to_json=True):
+    def load_data_files(self, task_ids, report_file_name=None, report_dir_name=None, write_to_json=True):
         """
         Preprocess data from cuckoo report
         report_dir_name: task_id
@@ -314,10 +314,10 @@ class PrepareData(object):
         print('\n[load_data_files] Process data from one report file to json format and encode nodes & edges')
         self.has_label = False
         if task_ids is None:
-            report_dir_name = 'malware'
-            report_file_name = '0bee54efca5e41b8bcafcba4f70c9498d48e088553f7b442ea54670db9f874b2.json'
+            report_dir_name = report_dir_name if report_dir_name is not None else 'malware'
+            # report_file_name = '0bee54efca5e41b8bcafcba4f70c9498d48e088553f7b442ea54670db9f874b2.json'
 
-            report_path = '/media/fitmta/Storage/MinhTu/Dataset/one/'+report_dir_name+'/'+report_file_name
+            report_path = 'api_tasks/data_report/'+report_dir_name+'/'+report_file_name
 
             print('[load_data_files] report_file_name', report_dir_name, report_file_name)
             print('[load_data_files] report_path', report_path)
@@ -326,8 +326,9 @@ class PrepareData(object):
             if behavior is not None:
                 self.encode_report(behavior, report_file_name, 't'+report_dir_name)
             else:
-                print('behavior none. Skip '+report_dir_name+'/'+report_file_name)
+                print('[load_data_files] behavior none. Skip '+report_dir_name+'/'+report_file_name)
         else:
+            report_file_name = 'report.json'
             for task_id in task_ids:
                 report_dir_name = str(task_id)
                 report_path = '{}/{}/reports/{}'.format(self.cuckoo_analysis_dir, report_dir_name, report_file_name)
@@ -357,7 +358,7 @@ class PrepareData(object):
                     if bool(self.json_data[key]) is False:
                         n_empty_obj += 1
             if n_empty_obj == len(self.json_data):
-                print('G[load_data_files] raph cant be created')
+                print('[load_data_files] Graph cant be created')
                 return None
         else:
             print('[load_data_files] Writing to json file option set to False. Skip saving.')

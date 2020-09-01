@@ -61,6 +61,7 @@ class App:
 
         print('[App][__init__] GNAMES', GNAMES)
         self.graphs_names = self.data[GNAMES]
+        print('[App][__init__] self.graphs_names', self.graphs_names)
 
         self.data_graph = self.data[GRAPH]
 
@@ -186,7 +187,7 @@ class App:
         except ValueError as e:
             print('Error while loading the model.', e)
 
-        print('\nPredict')
+        print('\n[App][predict] Predict')
         graphs = self.data[GRAPH]
         print('*** len graphs', len(graphs))
 
@@ -200,7 +201,7 @@ class App:
             logits = self.model(batches)
 
         logits = logits.cpu()
-        print('logits', logits)
+        # print('logits', logits)
         scores, indices = torch.max(logits, dim=1)
         return indices, scores
 

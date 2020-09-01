@@ -40,13 +40,15 @@ class App:
     
     TRAIN_SIZE = 0.7
 
-    def __init__(self, data, model_config, learning_config, pretrained_weight, early_stopping=True, patience=100, json_path=None, pickle_folder=None, vocab_path=None, mapping_path=None, odir=None, model_src_path=None):
+    def __init__(self, data, model_config, learning_config, pretrained_weight, early_stopping=True, patience=100, json_path=None, pickle_folder=None, vocab_path=None, mapping_path=None, odir=None, model_src_path=None, gdot_path=None):
         if model_src_path is not None:
             sys.path.insert(0, model_src_path)
             print('*** [app][__init__] model_src_path', model_src_path)
             from model_edgnn import Model
         else:
             from models.model import Model
+        
+        print('*** [app][__init__] gdot_path', gdot_path)
 
         self.data = data
         self.model_config = model_config
@@ -101,6 +103,7 @@ class App:
                            model_src_path=model_src_path)
 
         print('>>> [app][__init__] self.model', self.model)
+        
 
         if self.is_cuda is True:
             # self.model.cuda()

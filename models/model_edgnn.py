@@ -79,7 +79,7 @@ class Model(nn.Module):
         Build NN
         """
         if self.model_src_path is not None:
-            sys.path.insert(0, self.model_src_path)
+            sys.path.insert(1, self.model_src_path)
             print('*** edgnn layer src path', self.model_src_path)
             from edgnn import edGNNLayer
         else:
@@ -214,8 +214,8 @@ class Model(nn.Module):
         #################################
         for layer_idx, layer in enumerate(self.edgnn_layers):
             # print('~~ self.gdot_path', self.gdot_path)
-            # if self.gdot_path is not None:
-            #     layer.g_viz = nx.drawing.nx_pydot.read_dot(self.gdot_path)
+            if self.gdot_path is not None:
+                layer.g_viz = nx.drawing.nx_pydot.read_dot(self.gdot_path)
 
             if layer_idx == 0:  # these are gat layers
                 h = node_features
@@ -232,25 +232,27 @@ class Model(nn.Module):
         ####################################################
         # Visualize for inspection (only when inference)
         ####################################################
-        # if self.gdot_path is not None:
-        #     gdot_name = self.gdot_path.split('/')[-1]
-        #     viz_dot_path = "/media/fitmta/Storage/MinhTu/HAN_sec_new/data/graphviz/data_report"
-        #     G = layer.g_viz
-        #     nx.drawing.nx_pydot.write_dot(G, '{}/{}.dot'.format(viz_dot_path, gdot_name))
-        #     # pos = nx.spring_layout(G)
-        #     # print('G', G)
-        #     # print('pos', pos)
-        #     # nx.draw(G, pos, with_labels=True)
-        #     # nx.draw_networkx_edge_labels(G, pos)
-        #     # plt.show(block=False)
-        #     # plt.savefig('{}/{}.png'.format(viz_dot_path, gdot_name), format="PNG")
+        if self.gdot_path is not None:
+            gdot_name = self.gdot_path.split('/')[-1]
+            viz_dot_path = self.gdot_path.split(gdot_name)[0]
+            gdot_weighted_path = '{}/{}__weighted'.format(viz_dot_path, gdot_name)
+            print('[model_edgnn][forward] gdot_weighted_path', gdot_weighted_path)
+            G = layer.g_viz
+            nx.drawing.nx_pydot.write_dot(G, gdot_weighted_path)
+            # pos = nx.spring_layout(G)
+            # print('G', G)
+            # print('pos', pos)
+            # nx.draw(G, pos, with_labels=True)
+            # nx.draw_networkx_edge_labels(G, pos)
+            # plt.show(block=False)
+            # plt.savefig('{}/{}.png'.format(viz_dot_path, gdot_name), format="PNG")
 
-        #     # with open('{}/{}.dot'.format(viz_dot_path, gdot_name), 'r') as f:
-        #     #     gsrc = f.read().replace('\n', '')
-        #     #     gviz = Source(gsrc)
-        #     #     gviz.render('{}/{}.png'.format(viz_dot_path, gdot_name), view=True)
-        #     (graph,) = pydot.graph_from_dot_file('{}/{}.dot'.format(viz_dot_path, gdot_name))
-        #     graph.write_png('{}/{}__weighted.png'.format(viz_dot_path, gdot_name))
+            # with open('{}/{}.dot'.format(viz_dot_path, gdot_name), 'r') as f:
+            #     gsrc = f.read().replace('\n', '')
+            #     gviz = Source(gsrc)
+            #     gviz.render('{}/{}.png'.format(viz_dot_path, gdot_name), view=True)
+            (graph,) = pydot.graph_from_dot_file(gdot_weighted_path)
+            graph.write_png(gdot_weighted_path+'.png')
 
 
         #############################################################
