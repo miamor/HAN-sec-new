@@ -20,6 +20,7 @@ import sys
 import json
 from utils.utils import preprocess_adj, care_APIs
 from graphviz import Source
+import pydot
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -251,6 +252,7 @@ class Model(nn.Module):
             #     gsrc = f.read().replace('\n', '')
             #     gviz = Source(gsrc)
             #     gviz.render('{}/{}.png'.format(viz_dot_path, gdot_name), view=True)
+            print('[model_edgnn][forward] \t write to png', gdot_weighted_path+'.png')
             (graph,) = pydot.graph_from_dot_file(gdot_weighted_path)
             graph.write_png(gdot_weighted_path+'.png')
 
