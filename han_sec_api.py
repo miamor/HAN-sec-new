@@ -47,7 +47,7 @@ from prep_data_n import PrepareData
 # Overwrite
 __REVERSE_EDGE__ = True
 __APPEND_NID_EID__ = True
-__DO_DRAW__ = True
+__DO_DRAW__ = False
 
 
 
@@ -118,7 +118,7 @@ class HAN_module:
         # data = self.prep_data.load_data()
 
         if data is None:
-            return None, self.args
+            return None
         
         data = to_cuda(data) if cuda is True else data
         return data
@@ -186,10 +186,16 @@ if __name__ == "__main__":
             247, 303, 304, 310, 312, 1655, 1656, 1657, 1659, 1660]
 
 
-    tasks = None
+    # tasks = None
+    # han = HAN_module(task_ids=tasks, report_dir_name='game_Linh', report_file_name=None)
 
-    han = HAN_module(task_ids=tasks, report_dir_name='game_Linh', report_file_name=None)
-    cuda = True
+    # tasks = [9249, 9254, 9255] #
+    # tasks = [9256, 9257, 9258, 9259] # 0 1 1 1
+    # tasks = [9260, 9261, 9262]
+    tasks = [9305]
+    han = HAN_module(task_ids=tasks)
+
+    cuda = False
 
     data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
     if data is None:

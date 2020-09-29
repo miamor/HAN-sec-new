@@ -60,6 +60,7 @@ class App:
             self.mapping = json.load(f)
 
         print('[App][__init__] GNAMES', GNAMES)
+        print('[App][__init__] self.data', self.data)
         self.graphs_names = self.data[GNAMES]
         print('[App][__init__] self.graphs_names', self.graphs_names)
 
