@@ -281,35 +281,51 @@ class PrepareData(object):
             self.load_from_pickle()
             return self.data_dortmund_format
 
-        ''' Copy prep_data file to this data folder '''
-        if self.final_json_path is not None:
-            shutil.copy('./utils/prep_data.py', self.final_json_path+'/../prep_data.py')
+        if self.from_each_graph_pickle is False:
+            ''' Copy prep_data file to this data folder '''
+            if self.final_json_path is not None:
+                shutil.copy('./utils/prep_data.py', self.final_json_path+'/../prep_data.py')
 
-        if self.from_folder is True:
-            if self.from_json is False:
-                self.save_json = True
-            self.prepare_word_embedding = True
+            if self.from_folder is True:
+                if self.from_json is False:
+                    self.save_json = True
+                self.prepare_word_embedding = True
                     
-            print('\n[load_data] Process data from reports folder to data.json and encode nodes & edges')
-            self.encode_reports_from_dir(self.save_json)
+                print('\n[load_data] Process data from reports folder to data.json and encode nodes & edges')
+                self.encode_reports_from_dir(self.save_json)
 
-            print('\n[load_data] Gen corpus')
-            self.gen_vocab_and_corpus()
+                print('\n[load_data] Gen corpus')
+                self.gen_vocab_and_corpus()
 
-        elif self.from_json is True:
-            print('\n[load_data] Load data from json file')
-            self.load_data_json()
+            elif self.from_json is True:
+                print('\n[load_data] Load data from json file')
+                self.load_data_json()
 
 
-        print('\n[load_data] Train & load node/edge embedding')
-        self.train_and_load_embedding()
+            print('\n[load_data] Train & load node/edge embedding')
+            self.train_and_load_embedding()
 
-        if self.from_json is True:
-            print('\n[load_data] Encode nodes & edges')
-            self.encode_data()
+            if self.from_json is True:
+                print('\n[load_data] Encode nodes & edges')
+                self.encode_data()
             
-        print('\n[load_data] Create graphs and save to pickle files from encoded data')
-        self.create_graphs()
+        # Use when handling with large dataset like pack1 (run in partition) 
+        # if self.from_json is True and (self.partition is True or self.do_draw is True):
+        #     if self.from_json is True:
+        if self.partition is True:
+            if self.from_each_graph_pickle is False:
+                print('\n[load_data] Encode nodes & edges and create seperate graphs')
+                for report_dir_name in os.listdir(self.reports_parent_dir_path): # category name (benign/malware)
+                    report_dir_path = os.path.join(self.reports_parent_dir_path, report_dir_name)
+                    for report_file_name in sorted(os.listdir(report_dir_path)):
+                        g_name = '{}__{}'.format(report_dir_name, report_file_name)
+                        self.create_graph_from_report(g_name, report_dir_name)
+
+            print('\n[load_data] Merge graphs and save to pickle files from encoded data')
+            self.merge_graphs()
+        else:
+            print('\n[load_data] Create graphs and save to pickle files from encoded data')
+            self.create_graphs()
 
         return self.data_dortmund_format
 
@@ -1114,7 +1130,6 @@ class PrepareData(object):
         ''' add edge with data to graph '''
         # print("path['graph']", path['graph'])
         # print(self.graphs_dict[path['graph']].number_of_nodes())
-        # print('edata[hel]', edata['hel'].shape)
         self.graphs_dict[path['graph']].add_edge(path['from_in_graph'], path['to_in_graph'], data=edata)
         if self.do_draw:
             if len(self.args_to_str(path['args'])) > 0:
@@ -1151,15 +1166,10 @@ class PrepareData(object):
 
     def train_and_load_embedding(self):
         ''' Save all corpus to transform '''
-        print('[train_and_load_embedding] self.prepare_word_embedding', self.prepare_word_embedding, 'self.train_embedder', self.train_embedder)
         if self.prepare_word_embedding:
             if self.train_embedder:
-                print('[train_and_load_embedding] prepare')
                 # self.edge_embedder.prepare(self.edge_args_embedding_data_csv, self.edge_args_embedding_data_csv__cls, self.train_list_name, self.test_list_name, self.flags_keys)
                 # self.node_embedder.prepare(self.node_name_embedding_data_csv, self.node_name_embedding_data_csv__cls, self.train_list_name, self.test_list_name)
-                # print('[train_and_load_embedding] self.edge_args_embedding_data_csv', self.edge_args_embedding_data_csv)
-                # print('[train_and_load_embedding] self.train_list_name', self.train_list_name)
-                # print('[train_and_load_embedding] self.test_list_name', self.test_list_name)
                 self.edge_embedder.prepare(self.edge_args_embedding_data_csv, self.train_list_name, self.test_list_name, self.flags_keys)
                 self.node_embedder.prepare(self.node_name_embedding_data_csv, self.train_list_name, self.test_list_name)
 
@@ -1302,6 +1312,28 @@ class PrepareData(object):
             # self.graphs_viz[g_name].render(filename=gdot_path)
 
 
+    def merge_graphs(self):
+        ##############################
+        # Append to graphs list
+        ##############################
+        print('self.graph_folder', self.graph_folder)
+        for g_file in os.listdir(self.graph_folder):
+            g_label = g_file.split('__')[0]
+            g_name = g_file+'.json'
+            print('[merge_graphs] graph path', os.path.join(self.graph_folder, g_file))
+            graph = load_pickle(os.path.join(self.graph_folder, g_file))
+
+            n_nodes = graph.number_of_nodes()
+            if n_nodes > self.max_n_nodes:
+                self.max_n_nodes = n_nodes
+
+            self.graphs.append(graph)
+            self.graphs_names.append(g_name)
+            self.graphs_labels.append(g_label)
+
+        self.save_pickle_data()
+
+
     def create_graphs(self):
         """
         Create graphs from encoded data to feed to network
@@ -1430,14 +1462,10 @@ class PrepareData(object):
         Load data from pickle files
         """
         print('[load_from_pickle]', os.path.join(self.pickle_folder, GRAPH))
-        print('[load_from_pickle] graphs_name_train', os.path.join(self.pickle_folder, 'graphs_name_train'))
+        print('[load_from_pickle]', GNAMES, os.path.join(self.pickle_folder, GNAMES))
         self.data_dortmund_format = {
-            # GRAPH: load_pickle(os.path.join(self.pickle_folder, GRAPH)),
-            # GNAMES: load_pickle(os.path.join(self.pickle_folder, GNAMES)),
-            'graphs_train': load_pickle(os.path.join(self.pickle_folder, 'graphs_train')),
-            'graphs_name_train': load_pickle(os.path.join(self.pickle_folder, 'graphs_name_train')),
-            'graphs_test': load_pickle(os.path.join(self.pickle_folder, 'graphs_test')),
-            'graphs_name_test': load_pickle(os.path.join(self.pickle_folder, 'graphs_name_test')),
+            GRAPH: load_pickle(os.path.join(self.pickle_folder, GRAPH)),
+            GNAMES: load_pickle(os.path.join(self.pickle_folder, GNAMES)),
             N_ENTITIES: load_pickle(os.path.join(self.pickle_folder, N_ENTITIES)),
             N_RELS: load_pickle(os.path.join(self.pickle_folder, N_RELS)),
             MAX_N_NODES: load_pickle(os.path.join(self.pickle_folder, MAX_N_NODES)),
@@ -1445,9 +1473,7 @@ class PrepareData(object):
         }
         if self.has_label is True:
             self.data_dortmund_format[N_CLASSES] = load_pickle(os.path.join(self.pickle_folder, N_CLASSES))
-            # self.data_dortmund_format[LABELS] = torch.load(os.path.join(self.pickle_folder, LABELS))
-            self.data_dortmund_format['labels_train'] = torch.load(os.path.join(self.pickle_folder, 'labels_train'))
-            self.data_dortmund_format['labels_test'] = torch.load(os.path.join(self.pickle_folder, 'labels_test'))
+            self.data_dortmund_format[LABELS] = torch.load(os.path.join(self.pickle_folder, LABELS))
             self.data_dortmund_format[LABELS_TXT] = load_pickle(os.path.join(self.pickle_folder, LABELS_TXT))
 
         return self.data_dortmund_format

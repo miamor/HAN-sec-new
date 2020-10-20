@@ -52,10 +52,10 @@ __DO_DRAW__ = True
 
 
 class HAN_module:
-    def __init__(self, task_ids=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
+    def __init__(self, task_ids=None, cuckoo_analysis_dir=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
         self.task_ids = task_ids
         self.load_args(task_ids, report_dir_name, report_dir_path, report_file_name)
-        self.prep_data = PrepareData(self.args)
+        self.prep_data = PrepareData(self.args, cuckoo_analysis_dir=cuckoo_analysis_dir)
     
     def load_args(self, task_ids=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
         self.args = read_params(CONFIG_PATH, verbose=False)
@@ -187,8 +187,13 @@ if __name__ == "__main__":
             247, 303, 304, 310, 312, 1655, 1656, 1657, 1659, 1660]
 
 
+    # 2870 benign
+    # 2863 benign
+    # 2862 malware
+    # 2861 benign
+
     tasks = None
-    han = HAN_module(task_ids=tasks, report_dir_name='game_Linh_miss', report_file_name=None)
+    han = HAN_module(task_ids=tasks, cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', report_dir_name='2870', report_file_name=None)
     
     data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
     if data is None:

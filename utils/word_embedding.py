@@ -32,8 +32,8 @@ class WordEmbedding(object):
     word_to_ix = {}
 
     tfidf = None
-    max_ft = 100000
-    top_k = 3
+    max_ft = None
+    top_k = None
 
     def __init__(self, emb_trained_path, emb_corpus_path, mapping):
         self.emb_trained_path = emb_trained_path
@@ -122,14 +122,18 @@ class WordEmbedding(object):
         #             emb_data_by_type['train'].append(data)
         #         elif data['file'] in test_list_name:
         #             emb_data_by_type['test'].append(data)
+
+        print('[word_embedding][prepare] test_list_name', test_list_name)
+
         for index, data in enumerate(embedding_data_csv):
-            # print('data in emb_data', data)
+            print('~~~~ [word_embedding][prepare] data[file]', data['file'])
             if data['file'] in train_list_name:
                 emb_data_by_type['train'].append(data)
             elif data['file'] in test_list_name:
                 emb_data_by_type['test'].append(data)
 
         for dtype in emb_data_by_type:
+            print('[word_embedding][prepare] Save to {}/{}.csv'.format(self.emb_trained_path, dtype))
             with open('{}/{}.csv'.format(self.emb_trained_path, dtype), 'w') as f:
                 fnames = ['class', 'data', 'file']
                 writer = csv.DictWriter(f, fieldnames=fnames)
@@ -206,17 +210,17 @@ class Doc2Vec_(WordEmbedding):
 
 
 
-    def train(self):
+    def train(self, preprocess_level='word'):
         ''' Train doc2vec '''
-        print('\nTrain doc2vec for', self.emb_trained_path)
+        print('\n[word_embedding][train] Train doc2vec for', self.emb_trained_path)
         preprocessor = CSVPreprocessor(self.emb_trained_path)
-        # train_data, val_data, test_data = preprocessor.preprocess(preprocess_level='char')
+        # train_data, val_data, test_data = preprocessor.preprocess(preprocess_level=preprocess_level)
         # train_val_data = train_data + val_data
-        train_val_data, test_data = preprocessor.preprocess(preprocess_level='char')
+        train_val_data, test_data = preprocessor.preprocess(preprocess_level=preprocess_level)
         # print('train_data', len(train_data))
         # print('val_data', len(val_data))
-        print('train_val_data', len(train_val_data))
-        print('test_data', len(test_data))
+        print('[word_embedding][train] train_val_data', len(train_val_data))
+        print('[word_embedding][train] test_data', len(test_data))
 
         X_train = [text for text, label in train_val_data]
         X_test = [text for text, label in test_data]
@@ -294,7 +298,7 @@ class Doc2Vec_(WordEmbedding):
         return X_vectors
 
 
-    def load(self, load_train_test_set=True):
+    def load(self, load_train_test_set=True, preprocess_level='word'):
         print('\nLoad doc2vec model for', self.emb_corpus_path)
 
         self.model_dbow = Doc2Vec.load("{}/{}__d2v_vectorize.pkl".format(self.emb_trained_path, self.type))
@@ -303,7 +307,7 @@ class Doc2Vec_(WordEmbedding):
 
         ''' Load and test on this corpus set '''
         preprocessor = CSVPreprocessor(self.emb_corpus_path, False)
-        corpus = preprocessor.preprocess(preprocess_level='char')
+        corpus = preprocessor.preprocess(preprocess_level=preprocess_level)
         
         X = [text for text, label in corpus]
         y = [label for text, label in corpus]
@@ -315,9 +319,9 @@ class Doc2Vec_(WordEmbedding):
         ''' Load and test on train/test set '''
         if load_train_test_set:
             preprocessor = CSVPreprocessor(self.emb_trained_path)
-            # train_data, val_data, test_data = preprocessor.preprocess(preprocess_level='char')
+            # train_data, val_data, test_data = preprocessor.preprocess(preprocess_level=preprocess_level)
             # train_val_data = train_data + val_data
-            train_val_data, test_data = preprocessor.preprocess(preprocess_level='char')
+            train_val_data, test_data = preprocessor.preprocess(preprocess_level=preprocess_level)
             
             X_train = [text for text, label in train_val_data]
             X_test = [text for text, label in test_data]
@@ -363,8 +367,8 @@ class TFIDF(WordEmbedding):
     def __init__(self, emb_trained_path, emb_corpus_path, mapping, max_ft, top_k):
         super(TFIDF, self).__init__(emb_trained_path, emb_corpus_path, mapping)
         # print('max_ft', max_ft)
-        if max_ft is None or max_ft <= 0:
-            raise AssertionError("max_ft must be set and > 0")
+        # if max_ft is None or max_ft <= 0:
+        #     raise AssertionError("max_ft must be set and > 0")
         if top_k is None or top_k <= 0:
             raise AssertionError("top_k must be set and > 0")
         self.max_ft = max_ft
@@ -372,6 +376,7 @@ class TFIDF(WordEmbedding):
 
 
     def test_on_set(self, set_name, X, y, vectorizer, model):
+        # print('[test_on_set] X', X)
         x_transformed = vectorizer.transform(X)
         
         score = model.score(x_transformed, y)
@@ -383,17 +388,17 @@ class TFIDF(WordEmbedding):
         return x_transformed
 
 
-    def train(self):
+    def train(self, preprocess_level='word'):
         ''' Train tf-idf '''
         print('\nTrain TF-IDF for', self.emb_trained_path)
         preprocessor = CSVPreprocessor(self.emb_trained_path)
-        # train_data, val_data, test_data = preprocessor.preprocess(preprocess_level='char')
+        # train_data, val_data, test_data = preprocessor.preprocess(preprocess_level=preprocess_level)
         # train_val_data = train_data + val_data
-        train_val_data, test_data = preprocessor.preprocess(preprocess_level='char')
+        train_val_data, test_data = preprocessor.preprocess(preprocess_level=preprocess_level)
         # print('train_data', len(train_val_data))
         # print('val_data', len(val_data))
-        print('train_val_data', len(train_val_data))
-        print('test_data', len(test_data))
+        print('[word_embedding][train] train_val_data', len(train_val_data))
+        print('[word_embedding][train] test_data', len(test_data))
 
         ''' Load and test on train/test set '''
         x_train = [text for text, label in train_val_data]
@@ -407,7 +412,7 @@ class TFIDF(WordEmbedding):
         # self.tfidf.fit(x_train)
 
         ''' Train a simple classifier '''
-        model = LogisticRegressionCV(max_iter=10000)
+        model = LogisticRegressionCV(max_iter=80)
         model.fit(x_train_transformed, y_train) # train model
 
         x_transformed = self.test_on_set('Train~', x_train, y_train, self.tfidf, model)
@@ -416,21 +421,21 @@ class TFIDF(WordEmbedding):
         # print('self.tfidf.vocabulary_', self.tfidf.vocabulary_)
 
         # Save tfidf features and model
-        print('Save to {}/{}__tfidf_vectorize.pkl'.format(self.emb_trained_path, self.type))
-        with open("{}/{}__tfidf_vectorize.pkl".format(self.emb_trained_path, self.type), 'wb') as handle:
+        print('Save to {}/{}__tfidf_k={}_lv={}__vectorize.pkl'.format(self.emb_trained_path, self.type, self.top_k, preprocess_level))
+        with open("{}/{}__tfidf_k={}_lv={}__vectorize.pkl".format(self.emb_trained_path, self.type, self.top_k, preprocess_level), 'wb') as handle:
             pickle.dump(self.tfidf, handle)
-        with open("{}/{}__tfidf_model.pkl".format(self.emb_trained_path, self.type), 'wb') as handle:
+        with open("{}/{}__tfidf_k={}_lv={}__model.pkl".format(self.emb_trained_path, self.type, self.top_k, preprocess_level), 'wb') as handle:
             pickle.dump(model, handle)
 
         return self.get_dict_vec(x_transformed)
 
 
-    def load(self, load_train_test_set=True):
+    def load(self, load_train_test_set=True, preprocess_level='word'):
         print('\nLoad TF-IDF model for', self.emb_corpus_path)
 
         # Load vectorize and model
-        tf_saved = pickle.load(open("{}/{}__tfidf_vectorize.pkl".format(self.emb_trained_path, self.type), 'rb'))
-        model = pickle.load(open("{}/{}__tfidf_model.pkl".format(self.emb_trained_path, self.type), 'rb'))
+        tf_saved = pickle.load(open("{}/{}__tfidf_k={}_lv={}__vectorize.pkl".format(self.emb_trained_path, self.type, self.top_k, preprocess_level), 'rb'))
+        model = pickle.load(open("{}/{}__tfidf_k={}_lv={}__model.pkl".format(self.emb_trained_path, self.type, self.top_k, preprocess_level), 'rb'))
 
 
         # Create new tfidfVectorizer with old vocabulary
@@ -439,7 +444,7 @@ class TFIDF(WordEmbedding):
 
         ''' Load and test on this corpus set '''
         preprocessor = CSVPreprocessor(self.emb_corpus_path, False)
-        corpus = preprocessor.preprocess(preprocess_level='char')
+        corpus = preprocessor.preprocess(preprocess_level=preprocess_level)
         
         X = [text for text, label in corpus]
         y = [label for text, label in corpus]
@@ -448,9 +453,9 @@ class TFIDF(WordEmbedding):
         # if load_train_test_set:
         if True: # tfidf always requires re-fit 
             preprocessor = CSVPreprocessor(self.emb_trained_path)
-            # train_data, val_data, test_data = preprocessor.preprocess(preprocess_level='char')
+            # train_data, val_data, test_data = preprocessor.preprocess(preprocess_level=preprocess_level)
             # train_val_data = train_data + val_data
-            train_val_data, test_data = preprocessor.preprocess(preprocess_level='char')
+            train_val_data, test_data = preprocessor.preprocess(preprocess_level=preprocess_level)
 
             x_train = [text for text, label in train_val_data]
             y_train = [label for text, label in train_val_data]
@@ -487,7 +492,8 @@ class TFIDF(WordEmbedding):
 
         # create dictionary to find a tfidf word each word
         for word in self.words:
-            self.word_to_ix[word] = tfidf_means[word]
+            if ' ' not in word:
+                self.word_to_ix[word] = tfidf_means[word]
 
         # print('self.word_to_ix', self.word_to_ix)
 
@@ -502,11 +508,12 @@ class TFIDF(WordEmbedding):
 
 
         self.words_unique = []
-        # print('self.word_to_ix', self.word_to_ix, 'self.word_to_ix')
+        # print('[word_embedding][get_dict_vec] self.word_to_ix', self.word_to_ix)
         # print('self.tfidf_ordered', self.tfidf_ordered, 'self.tfidf_ordered')
         for w in self.words:
             if w not in self.words_unique:
                 self.words_unique.append(w)
+        # print('[word_embedding][get_dict_vec] words_unique', self.words_unique)
 
         return self.word_to_ix, self.words_unique
 
@@ -570,3 +577,15 @@ class TFIDF(WordEmbedding):
         # x_transformed = self.tfidf.transform(x)
         # x_transformed = x_transformed.todense()
         # return x_transformed
+
+
+    def transform_(self, text):
+        x = text.split(' ')
+
+        if len(x) < self.top_k:
+            for i in range(self.top_k-len(x)):
+                x.append('')
+
+        x_transformed = self.tfidf.transform(x)
+        x_transformed = x_transformed.todense()
+        return x_transformed

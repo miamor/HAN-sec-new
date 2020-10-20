@@ -24,7 +24,8 @@ class CSVPreprocessor:
         self.columns = ['class', 'data', 'file']
         
     def preprocess(self, preprocess_level='word', val_size=0.1):
-        
+        print('[preprocessors][preprocess] self.split_train_test', self.split_train_test)
+       
         assert preprocess_level in ['word', 'char'], "preprocess_level should be either 'word' or 'char'"
         
         if self.split_train_test:
@@ -66,6 +67,7 @@ class CSVPreprocessor:
         return train_data, test_data
 
     def preprocess_all(self, preprocess_level='word'):
+        print('[preprocessors][preprocess_all] self.corpus_csv', self.corpus_csv)
                 
         _df = (pd.read_csv(self.corpus_csv, names=self.columns)
                      .assign(label=lambda x: x['class'].astype(int))

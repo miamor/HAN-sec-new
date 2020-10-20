@@ -37,7 +37,9 @@ from han_sec_app import App
 
 
 # newest -----------------
-CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
+
+CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/2020-10-03_07-06-06/config_edGNN_graph_class.json'
 
 prep_path = os.path.dirname(CONFIG_PATH)
 print('prep_path', prep_path)
@@ -50,12 +52,16 @@ __APPEND_NID_EID__ = True
 __DO_DRAW__ = True
 
 
+# CONFIG_PATH = cf.__ROOT__+'/models/configs/config_edGNN_graph_class.json'
+
+# from utils.prep_data_n import PrepareData
+
 
 class HAN_module:
-    def __init__(self, task_ids=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
+    def __init__(self, task_ids=None, cuckoo_analysis_dir=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
         self.task_ids = task_ids
         self.load_args(task_ids, report_dir_name, report_dir_path, report_file_name)
-        self.prep_data = PrepareData(self.args)
+        self.prep_data = PrepareData(self.args, cuckoo_analysis_dir=cuckoo_analysis_dir)
     
     def load_args(self, task_ids=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
         self.args = read_params(CONFIG_PATH, verbose=False)
@@ -65,6 +71,8 @@ class HAN_module:
         self.report_file_name = report_file_name
 
         self.args['config_fpath'] = CONFIG_PATH
+
+        self.args['from_pickle'] = False
 
         if task_ids is not None:
             task_ids = [str(tid) for tid in task_ids]
@@ -185,10 +193,16 @@ if __name__ == "__main__":
     tasks = [1746, 1748, 1750, 1751, 1754, 1756,
             247, 303, 304, 310, 312, 1655, 1656, 1657, 1659, 1660]
 
+    tasks = [9819]
 
     tasks = None
 
-    han = HAN_module(task_ids=tasks, report_dir_name='game_Linh', report_file_name=None)
+    han = HAN_module(task_ids=tasks, 
+                    #  cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
+                    #  report_dir_name='hh', 
+                     cuckoo_analysis_dir='/media/tunguyen/TuTu_Passport/MTAAV/HAN-sec-new/api_tasks/data_report', 
+                     report_dir_name='9819_malware__new', 
+                     report_file_name=None)
     cuda = True
 
     data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll

@@ -3,8 +3,8 @@ import numpy as np
 
 import torch
 import os
-# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"  # specify which GPU(s) to be used
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"  # specify which GPU(s) to be used
 # from keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
 # from keras.models import Model
 # from keras.optimizers import Adam
@@ -34,18 +34,18 @@ def load_dataset(args, cuda):
         print('*** prep path', config_params['prep_path'])
         from prep_data_n import PrepareData
     else:
-        from utils.prep_data_n_use import PrepareData
+        from utils.prep_data_n import PrepareData
 
 
-    prep_data = PrepareData(args)
-    data = prep_data.load_data(from_folder=args['from_report_folder'],
-                               from_json=args['from_data_json'],
-                               from_pickle=args['from_pickle'])
+    prep_data = PrepareData(args, cuckoo_analysis_dir='api_tasks/data_report')
+    data = prep_data.load_data()
     data = to_cuda(data) if cuda is True else data
+    # if cuda is True:
+    #     data[GRAPH] = data[GRAPH].to(torch.device('cuda:0'))
     return data
 
 
-def run_app(args, data, cuda):
+def run_app(args, data, cuda, gpu):
     # print_graph_stats(data[GRAPH])
 
     print('*** Load model from', args['config_fpath'])
@@ -64,7 +64,8 @@ def run_app(args, data, cuda):
         print('\n*** Set default saving/loading path to:', default_path)
 
         learning_config = {'lr': args['lr'], 'epochs': args['epochs'],
-                           'weight_decay': args['weight_decay'], 'batch_size': args['batch_size'], 'cuda': cuda}
+                           'weight_decay': args['weight_decay'], 'batch_size': args['batch_size'], 
+                           'cuda': cuda, 'gpu': gpu}
         app = App(data, model_config=model_config,
                   learning_config=learning_config,
                   pretrained_weight=args['checkpoint_file'], early_stopping=True, patience=20, 
@@ -81,12 +82,13 @@ def run_app(args, data, cuda):
         shutil.copy(src='utils/prep_data_n.py', dst=odir+'/prep_data_n.py')
         shutil.copy(src='utils/word_embedding.py', dst=odir+'/word_embedding.py')
         shutil.copy(src='models/model.py', dst=odir+'/model.py')
-        files = ['gat_w', 'gat_nw', 'gat_nw_ns', 'edgnn']
+        files = ['gat_w', 'gat_nw', 'gat_nw_ns', 'edgnn', 'edgnn_o']
         for fo in files:
             shutil.copy(src='models/model_{}.py'.format(fo), dst=odir+'/model_{}.py'.format(fo))
             shutil.copy(src='models/layers/{}.py'.format(fo), dst=odir+'/{}.py'.format(fo))
         shutil.copy(src='main.py', dst=odir+'/main.py')
         shutil.copy(src='app.py', dst=odir+'/app.py')
+        shutil.copy(src='app_crossentropy.py', dst=odir+'/app_crossentropy.py')
         ''' train '''
         if 'train_list_file' in args:
             app.train(default_path, k_fold=args['k_fold'], train_list_file=args['train_list_file'], test_list_file=args['test_list_file'])
@@ -101,7 +103,7 @@ def run_app(args, data, cuda):
     # if args['action'] == "test" and args['checkpoint_file'] is not None:
     if args['action'] == "test":
         print('\n*** Start testing ***\n')
-        learning_config = {'cuda': cuda}
+        learning_config = {'cuda': cuda, 'gpu': gpu}
         # odir = 'output/2020-01-14_15-04-01'
         # odir = args['out_dir']
 
@@ -126,7 +128,7 @@ def run_app(args, data, cuda):
         app.test(args['checkpoint_file'])
 
 
-def run_app_2(args, data, cuda):
+def run_app_2(args, data, cuda, gpu):
     # config_params = read_params(args.config_fpath, verbose=True)
     # odir = args['out_dir']
 
@@ -144,7 +146,7 @@ def run_app_2(args, data, cuda):
 
 
     print('\n*** Start testing ***\n')
-    learning_config = {'cuda': cuda}
+    learning_config = {'cuda': cuda, 'gpu': gpu}
 
     app = App(data, model_config=model_config, learning_config=learning_config,
               pretrained_weight=args['checkpoint_file'], early_stopping=True, patience=20, 
@@ -161,7 +163,7 @@ if __name__ == "__main__":
                         default='models/config/config_edGNN_graph_class.json')
     # __save_results/ft_type+lbl__9266__666__cuckoo_ADung__iapi__vocablower_iapi__doc2vec/game_Linh_none.json
 
-    parser.add_argument("-g", "--gpu", type=int, default=-1, help="gpu")
+    parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu")
 
     parser.add_argument("action", choices={'train', 'test', 'test_data', 'prep'})
 
@@ -170,7 +172,7 @@ if __name__ == "__main__":
     parser.add_argument("--k_fold", type=int, default=10,
                         help="k_fold (only for graph classification)")
     parser.add_argument("--lr", type=float, default=1e-3, help="learning rate")
-    parser.add_argument("--epochs", type=int, default=2000,
+    parser.add_argument("--epochs", type=int, default=100,
                         help="number of training epochs")
     parser.add_argument("--weight_decay", type=float,
                         default=5e-4, help="Weight for L2 loss")
@@ -189,9 +191,8 @@ if __name__ == "__main__":
         cuda = False
     else:
         cuda = True
-        print('cuda', cuda)
         torch.cuda.set_device(args['gpu'])
-
+    print('cuda', cuda)
 
     config_params = read_params(args['config_fpath'], verbose=False)
     # combine arguments from config file and args
@@ -211,6 +212,11 @@ if __name__ == "__main__":
     ###########################
     # Load data
     ###########################
+    # if args['action'] in ["train", "test_on_data"]:
+    #     data_ = load_dataset(config_params, cuda)
+    # else:
+    #     # data_ = None
+    #     data_ = load_dataset(config_params, cuda)
     data_ = load_dataset(config_params, cuda)
 
 
@@ -218,6 +224,6 @@ if __name__ == "__main__":
     # Run the app
     ###########################
     if args['action'] == "test_data":
-        run_app_2(config_params, data_, cuda)
+        run_app_2(config_params, data_, cuda, args['gpu'])
     else:
-        run_app(config_params, data_,cuda)
+        run_app(config_params, data_, cuda, args['gpu'])

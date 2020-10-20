@@ -61,15 +61,10 @@ class App:
         with open(mapping_path, 'r') as f:
             self.mapping = json.load(f)
 
-        self.labels_train = self.data['labels_train']
-        self.graphs_name_train = self.data['graphs_name_train']
-        self.data_graph_train = self.data['graphs_train']
+        self.labels = self.data[LABELS]
+        self.graphs_names = self.data[GNAMES]
 
-        self.labels_test = self.data['labels_test']
-        self.graphs_name_test = self.data['graphs_name_test']
-        self.data_graph_test = self.data['graphs_test']
-
-        print('[app][__init__] self.data_graph_train', len(self.data_graph_train))
+        self.data_graph = self.data[GRAPH]
 
         # save nid and eid to nodes & edges
         # print('self.data_graph[0]', self.data_graph[0])
@@ -96,7 +91,7 @@ class App:
         self.ModelObj = Model
         self.model_src_path = model_src_path
 
-        self.model = self.ModelObj(g=self.data_graph_train[0],
+        self.model = self.ModelObj(g=self.data_graph[0],
                            config_params=self.model_config,
                            n_classes=self.data_nclasses,
                            n_rels=self.data_nrels,
@@ -160,24 +155,75 @@ class App:
 
         # initialize graphs
         self.accuracies = np.zeros(k_fold)
+        graphs = self.data[GRAPH]                 # load all the graphs
 
         # debug purposes: reshuffle all the data before the splitting
-        random_indices = list(range(len(self.data_graph_train)))
+        random_indices = list(range(len(graphs)))
         random.shuffle(random_indices)
-        g_train = [self.data_graph_train[i] for i in random_indices]
-        l_train = self.labels_train[random_indices]
-        n_train = [self.graphs_name_train[i] for i in random_indices]
-
-        g_test = self.data_graph_test
-        l_test = self.labels_test
-        n_test = self.graphs_name_test
+        graphs = [graphs[i] for i in random_indices]
+        labels = self.labels[random_indices]
+        graphs_names = [self.graphs_names[i] for i in random_indices]
 
 
         split_train_test = True if train_list_file is None and test_list_file is None else False 
         print('[app][train] split_train_test', split_train_test)
 
+        '''
+        if split_train_test is True:
+            print('[app][train] train_list_file', train_list_file)
+            print('[app][train] test_list_file', test_list_file)
+            #############################
+            # Create new train/test set
+            # Split train and test
+            #############################
+            train_size = int(self.TRAIN_SIZE * len(graphs))
+            g_train = graphs[:train_size]
+            l_train = labels[:train_size]
+            n_train = graphs_names[:train_size]
+
+            g_test = graphs[train_size:]
+            l_test = labels[train_size:]
+            n_test = graphs_names[train_size:]
+            
+        else:
+            #############################
+            # Load train and test graphs from list
+            #############################
+            train_files = []
+            test_files = []
+            g_train = []
+            l_train = []
+            n_train = []
+            g_test = []
+            l_test = []
+            n_test = []
+            with open(train_list_file, 'r') as f:
+                train_files = [l.strip() for l in f.readlines()]
+            with open(test_list_file, 'r') as f:
+                test_files = [l.strip() for l in f.readlines()]
+            
+            for i in range(len(labels)):
+                graph_jsonpath = graphs_names[i]
+                # print(graph_jsonpath)
+                if graph_jsonpath in train_files:
+                    g_train.append(graphs[i])
+                    l_train.append(labels[i])
+                    n_train.append(graphs_names[i])
+                if graph_jsonpath in test_files:
+                    g_test.append(graphs[i])
+                    l_test.append(labels[i])
+                    n_test.append(graphs_names[i])
+
+            l_train = torch.Tensor(l_train).type(torch.LongTensor)
+            l_test = torch.Tensor(l_test).type(torch.LongTensor)
+            if self.is_cuda is True:
+                l_train = l_train.cuda()
+                l_test = l_test.cuda()
+        '''
+
+        print('[app][train] len labels', len(labels))
         print('[app][train] len g_train', len(g_train))
-        print('[app][train] len g_test', len(g_test))
+        # print('[app][train] g_train', g_train)
 
 
         if not os.path.isdir(self.odir):
@@ -194,14 +240,14 @@ class App:
 
         K = k_fold
         for k in range(K):
-            # self.model = self.ModelObj(g=self.data_graph_train[0],
-            #                 config_params=self.model_config,
-            #                 n_classes=self.data_nclasses,
-            #                 n_rels=self.data_nrels,
-            #                 n_entities=self.data_nentities,
-            #                 is_cuda=self.is_cuda,
-            #                 batch_size=1,
-            #                 model_src_path=self.model_src_path)
+            self.model = self.ModelObj(g=self.data_graph[0],
+                            config_params=self.model_config,
+                            n_classes=self.data_nclasses,
+                            n_rels=self.data_nrels,
+                            n_entities=self.data_nentities,
+                            is_cuda=self.is_cuda,
+                            batch_size=1,
+                            model_src_path=self.model_src_path)
         
 
             print('*** [app][__init__] Model layers ***')
@@ -263,7 +309,7 @@ class App:
                     _, indices = torch.max(logits, dim=1)
                     # print('~~~~ logits', logits)
                     # print('------------------')
-                    # print('\t [app][train] indices', indices)
+                    print('\t [app][train] indices', indices)
                     # print('\t label', label)
                     correct = torch.sum(indices == label)
                     training_accuracies.append(
@@ -321,7 +367,7 @@ class App:
         except ValueError as e:
             print('[app][test] Error while loading the model.', e)
         
-        # self.save_traintest()
+        self.save_traintest()
 
         # print('\n[app][test] Test all')
         # # acc = np.mean(self.accuracies)

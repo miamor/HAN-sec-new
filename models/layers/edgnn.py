@@ -25,7 +25,8 @@ class edGNNLayer(nn.Module):
                  activation=None,
                  dropout=None,
                  bias=None,
-                 is_cuda=True):
+                 is_cuda=True,
+                 gpu=-1):
         """
         edGNN Layer constructor.
 
@@ -48,8 +49,13 @@ class edGNNLayer(nn.Module):
         self.dropout = dropout
         self.edge_dim = edge_dim
         self.bias = bias
-        self.is_cuda = is_cuda
+        # self.is_cuda = is_cuda
         self.g_viz = None
+
+        if gpu > 0: # use cuda
+            self.device = torch.device('cuda:{}'.format(gpu))
+        else:
+            self.device = torch.device('cpu')
 
         # 2. create variables
         self._build_parameters()
@@ -73,14 +79,17 @@ class edGNNLayer(nn.Module):
         # print('self.edge_dim', self.edge_dim)
         if self.edge_dim is not None:
             input_dim = input_dim + self.edge_dim
+            # self.e_group_attn_fc = nn.Linear(input_dim, 1, bias=False).to(self.device)
             self.e_group_attn_fc = nn.Linear(input_dim, 1, bias=False)
         # print('input_dim', input_dim)
         # print('self.out_feats', self.out_feats)
 
         input_dim_attn1 = self.node_dim if self.edge_dim is None else self.node_dim + self.edge_dim
+        # self.e_src_attn_fc = nn.Linear(input_dim_attn1, 1, bias=False).to(self.device)
         self.e_src_attn_fc = nn.Linear(input_dim_attn1, 1, bias=False)
         # self.e_src_linear = nn.Linear(input_dim_attn1, self.out_feats, bias=False)
 
+        # self.linear = nn.Linear(input_dim, self.out_feats, bias=self.bias).to(self.device)
         self.linear = nn.Linear(input_dim, self.out_feats, bias=self.bias)
         # self.attn_fc = nn.Linear(input_dim, 1, bias=False)
 
@@ -89,6 +98,7 @@ class edGNNLayer(nn.Module):
 
         # Dropout module
         if self.dropout:
+            # self.dropout = nn.Dropout(p=self.dropout).to(self.device)
             self.dropout = nn.Dropout(p=self.dropout)
 
 
@@ -101,15 +111,17 @@ class edGNNLayer(nn.Module):
             # z2 = e_ft
             # a = self.e_group_attn_fc(e_ft)
             z2 = torch.cat([e_ft, edges.src[GNN_NODE_FEAT_IN_KEY], edges.dst[GNN_NODE_FEAT_IN_KEY]], dim=2)
+            z2 = nn.Parameter(z2)
+            # print('>>> [edgnn][edge_weight_src] z2', z2)
             a = self.e_group_attn_fc(z2)
             # e = F.leaky_relu(a)
-            e = a
+            e = nn.Parameter(a)
             gamma = F.softmax(e, dim=1)
-            e_weighted = gamma * e_ft
+            e_weighted = nn.Parameter(gamma * e_ft)
 
             # self.viz(edges, gamma)
         else:
-            e_weighted = e_ft
+            e_weighted = nn.Parameter(e_ft)
 
         #####################
         # Inference only
@@ -192,9 +204,10 @@ class edGNNLayer(nn.Module):
         # print('\t*** nodes nid', nodes.data['nid'])
         # print('\t~~~ msg mailbox', msg.shape)
 
+        msg = nn.Parameter(msg)
         a = self.e_src_attn_fc(msg)
         # e = F.elu(a)
-        e = a
+        e = nn.Parameter(a)
         alpha = F.softmax(e, dim=1)
         # alpha = e
         msg = alpha * msg

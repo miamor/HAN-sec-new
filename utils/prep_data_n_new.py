@@ -2,8 +2,8 @@
 prep_data__doc2vec_edge_node
 """
 import sys
-sys.path.insert(1, '../..')
-from utils.utils import indices_to_one_hot, label_encode_onehot, sample_mask, preprocess_adj, preprocess_features, save_pickle, load_pickle, save_txt, care_APIs
+# sys.path.insert(1, '../..')
+from .utils import indices_to_one_hot, label_encode_onehot, sample_mask, preprocess_adj, preprocess_features, save_pickle, load_pickle, save_txt, care_APIs
 
 import os
 import json
@@ -23,6 +23,12 @@ import pydot
 import networkx as nx
 import matplotlib.pyplot as plt
 from utils.word_embedding import TFIDF, Doc2Vec_
+
+from multiprocessing.pool import ThreadPool
+from concurrent.futures.thread import ThreadPoolExecutor
+from multiprocessing import Process
+
+__THREADS_NUM__ = 20
 
 class PrepareData(object):
     DATA_OUT_PATH = ''  # data root dir
@@ -74,6 +80,8 @@ class PrepareData(object):
         
         self.do_draw = config['do_draw'] if 'do_draw' in config else False
         self.partition = config['partition'] if 'partition' in config else False
+
+        self.preprocess_level = config['preprocess_level']
 
         self.reset()
         
@@ -265,6 +273,8 @@ class PrepareData(object):
         self.flags_keys = []
         self.mapping = {}
 
+        self.g_names = []
+
         self.node_name_code = { self.interesting_apis[i]: i for i in range(0, len(self.interesting_apis)) }
 
 
@@ -281,35 +291,74 @@ class PrepareData(object):
             self.load_from_pickle()
             return self.data_dortmund_format
 
-        ''' Copy prep_data file to this data folder '''
-        if self.final_json_path is not None:
-            shutil.copy('./utils/prep_data.py', self.final_json_path+'/../prep_data.py')
+        if self.partition is False or self.from_each_graph_pickle is False:
+            ''' Copy prep_data file to this data folder '''
+            if self.final_json_path is not None:
+                shutil.copy('./utils/prep_data.py', self.final_json_path+'/../prep_data.py')
 
-        if self.from_folder is True:
-            if self.from_json is False:
-                self.save_json = True
-            self.prepare_word_embedding = True
-                    
-            print('\n[load_data] Process data from reports folder to data.json and encode nodes & edges')
-            self.encode_reports_from_dir(self.save_json)
+            if self.from_folder is True:
+                if self.from_json is False:
+                    self.save_json = True
+                self.prepare_word_embedding = True
+                
+                if self.from_json is True:
+                    print('\n[load_data] Load data from json file')
+                    self.load_data_json_multithread()
 
-            print('\n[load_data] Gen corpus')
-            self.gen_vocab_and_corpus()
+                print('\n[load_data] Process data from reports folder to data.json and encode nodes & edges')
+                self.encode_reports_from_dir(self.save_json)
 
-        elif self.from_json is True:
-            print('\n[load_data] Load data from json file')
-            self.load_data_json()
+                print('\n[load_data] Gen corpus')
+                self.gen_vocab_and_corpus()
+
+            elif self.from_json is True:
+                print('\n[load_data] Load data from json file')
+                self.load_data_json_multithread()
 
 
-        print('\n[load_data] Train & load node/edge embedding')
-        self.train_and_load_embedding()
+            print('\n[load_data] Train & load node/edge embedding')
+            self.train_and_load_embedding()
 
-        if self.from_json is True:
-            print('\n[load_data] Encode nodes & edges')
-            self.encode_data()
+            if self.from_json is True:
+                # if self.partition is False:
+                print('\n[load_data] Encode nodes & edges')
+                self.encode_data()
             
-        print('\n[load_data] Create graphs and save to pickle files from encoded data')
-        self.create_graphs()
+        # Use when handling with large dataset like pack1 (run in partition) 
+        # if self.from_json is True and (self.partition is True or self.do_draw is True):
+        #     if self.from_json is True:
+        if self.partition is True:
+            num_g = None
+            tot_g = 0
+            if self.from_each_graph_pickle is False:
+                print('\n[load_data] Encode nodes & edges and create seperate graphs')
+                self.finish_graphed = False
+                # num_g = -1
+                for report_dir_name in sorted(os.listdir(self.reports_parent_dir_path)): # category name (benign/malware)
+                    report_dir_path = os.path.join(self.reports_parent_dir_path, report_dir_name)
+                    # for report_file_name in sorted(os.listdir(report_dir_path)):
+                    #     g_name = '{}__{}'.format(report_dir_name, report_file_name)
+                    #     self.create_graph_from_report(g_name, report_dir_name)
+
+                    # Multiprocessing (error)
+                    # report_file_paths = [os.path.join(report_dir_path, report_file_name) for report_file_name in sorted(os.listdir(report_dir_path))]
+                    # tot_g += len(report_file_paths)
+                    # results = ThreadPool(__THREADS_NUM__).imap_unordered(self.create_graph_from_report_multithread, sorted(report_file_paths))
+                    # num_g = len(results)
+
+                    # Multi threading
+                    # num_g = 0
+                    with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+                        for report_file_name in sorted(os.listdir(report_dir_path)):
+                            g_name = '{}__{}'.format(report_dir_name, report_file_name)
+                            executor.submit(self.create_graph_from_report, g_name, report_dir_name)
+
+            if num_g is None or num_g == tot_g:
+                print('\n[load_data] Merge graphs and save to pickle files from encoded data')
+                self.merge_graphs()
+        else:
+            print('\n[load_data] Create graphs and save to pickle files from encoded data')
+            self.create_graphs()
 
         return self.data_dortmund_format
 
@@ -352,24 +401,40 @@ class PrepareData(object):
             #     os.makedirs(self.graph_viz_dir)
 
             if report_file_name is None: # loop through folder
-                for report_file_name in sorted(os.listdir(report_dir_path+'/'+report_dir_name)):
-                    report_path = report_dir_path+'/'+report_dir_name+'/'+report_file_name
-                    self.load_data_files_extension(report_path, report_dir_name, report_file_name)
+                # for report_file_name in sorted(os.listdir(report_dir_path+'/'+report_dir_name)):
+                #     report_path = report_dir_path+'/'+report_dir_name+'/'+report_file_name
+                #     self.load_data_files_extension(report_path, report_dir_name, report_file_name)
+                with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+                    for report_file_name in sorted(os.listdir(report_dir_path+'/'+report_dir_name)):
+                        report_path = report_dir_path+'/'+report_dir_name+'/'+report_file_name
+                        executor.submit(self.load_data_files_extension, report_path, report_dir_name, report_file_name)
+
             else: # process 1 file only
                 report_path = report_dir_path+'/'+report_dir_name+'/'+report_file_name
                 self.load_data_files_extension(report_path, report_dir_name, report_file_name)
 
         else:
             report_file_name = 'report.json'
-            for task_id in task_ids:
-                report_dir_name = str(task_id)
-                report_path = '{}/{}/reports/{}'.format(self.cuckoo_analysis_dir, report_dir_name, report_file_name)
+            # for task_id in task_ids:
+            #     report_dir_name = str(task_id)
+            #     report_path = '{}/{}/reports/{}'.format(self.cuckoo_analysis_dir, report_dir_name, report_file_name)
 
-                # self.graph_viz_dir = 'api_tasks/graphviz/'+report_dir_name
-                # if not os.path.exists(self.graph_viz_dir):
-                #     os.makedirs(self.graph_viz_dir)
+            #     # self.graph_viz_dir = 'api_tasks/graphviz/'+report_dir_name
+            #     # if not os.path.exists(self.graph_viz_dir):
+            #     #     os.makedirs(self.graph_viz_dir)
 
-                self.load_data_files_extension(report_path, report_dir_name, report_file_name)
+            #     self.load_data_files_extension(report_path, report_dir_name, report_file_name)
+            with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+                for task_id in task_ids:
+                    report_dir_name = str(task_id)
+                    report_path = '{}/{}/reports/{}'.format(self.cuckoo_analysis_dir, report_dir_name, report_file_name)
+
+                    # self.graph_viz_dir = 'api_tasks/graphviz/'+report_dir_name
+                    # if not os.path.exists(self.graph_viz_dir):
+                    #     os.makedirs(self.graph_viz_dir)
+
+                    self.load_data_files_extension(report_path, report_dir_name, report_file_name)
+                    executor.submit(self.load_data_files_extension, report_path, report_dir_name, report_file_name)
 
 
         self.gen_edge_args_embedding_data()
@@ -384,7 +449,6 @@ class PrepareData(object):
             for key in self.json_data_paths:
                 with open(self.json_data_paths[key], 'w') as outfile:
                     json.dump(self.json_data[key], outfile)
-                    # lenn += len(self.json_data[key])
                     if bool(self.json_data[key]) is False:
                         n_empty_obj += 1
             if n_empty_obj == len(self.json_data):
@@ -399,45 +463,81 @@ class PrepareData(object):
         self.train_and_load_embedding()
 
         print('\n[load_data_files] Encode nodes & edges')
-        self.encode_data()
-        
+        # self.encode_data()
 
-        print('\n[load_data_files] Create graphs and save to pickle files from encoded data')
-        self.create_graphs()
+        # print('\n[load_data_files] Create graphs and save to pickle files from encoded data')
+        # self.create_graphs()
+
+
+        with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+            for report_file_name in sorted(os.listdir(report_dir_path+'/'+report_dir_name)):
+                g_name = '{}__{}'.format(report_dir_name, report_file_name)
+                executor.submit(self.create_graph_from_report, g_name, '')
+
+        print('\n[load_data] Merge graphs and save to pickle files from encoded data')
+        self.merge_graphs()
 
         return self.data_dortmund_format
 
 
+    def encode_reports_from_dir_multithread(self, report_file_path):
+        report_file_name = os.path.basename(report_file_path)
+        report_dir_name = os.path.basename(os.path.dirname(report_file_path))
+        
+        print('[encode_reports_from_dir]', report_dir_name+'/'+report_file_name)
+        behavior = self.read_report(report_file_path)
+
+        if behavior is not None:
+            g_name = report_dir_name+'__'+report_file_name
+            if g_name not in self.g_names:
+                # print('\t [encode_reports_from_dir] Run encode_report()')
+                self.encode_report(behavior, report_file_name, report_dir_name)
+        else:
+            print('[encode_reports_from_dir] behavior none. Skip ' +report_dir_name+'/'+report_file_name)
+
     def encode_reports_from_dir(self, write_to_json=True):
         for report_dir_name in os.listdir(self.reports_parent_dir_path):
             report_dir_path = os.path.join(self.reports_parent_dir_path, report_dir_name)
-            n = 0
-            for report_file_name in sorted(os.listdir(report_dir_path)):
-                n += 1
-                print('[encode_reports_from_dir]', n, report_dir_name+'/'+report_file_name)
-                behavior = self.read_report(os.path.join(
-                    report_dir_path, report_file_name))
+            # n = 0
+            # for report_file_name in sorted(os.listdir(report_dir_path)):
+            #     n += 1
+            #     print('[encode_reports_from_dir]', n, report_dir_name+'/'+report_file_name)
+            #     behavior = self.read_report(os.path.join(report_dir_path, report_file_name))
 
-                if behavior is not None:
-                    self.encode_report(
-                        behavior, report_file_name, report_dir_name)
-                else:
-                    print('[encode_reports_from_dir] behavior none. Skip ' +
-                          report_dir_name+'/'+report_file_name)
-        
-        self.gen_edge_args_embedding_data()
-        self.gen_node_name_embedding_data()
+            #     if behavior is not None:
+            #         self.encode_report(
+            #             behavior, report_file_name, report_dir_name)
+            #     else:
+            #         print('[encode_reports_from_dir] behavior none. Skip ' +
+            #               report_dir_name+'/'+report_file_name)
+
+            report_file_paths = [os.path.join(report_dir_path, report_file_name) for report_file_name in sorted(os.listdir(report_dir_path))]
+            ThreadPool(__THREADS_NUM__).imap_unordered(self.encode_reports_from_dir_multithread, sorted(report_file_paths))
+            # with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+            #     for report_file_path in sorted(report_file_paths):
+            #         executor.submit(self.encode_reports_from_dir_multithread, report_file_path)
 
         ''' Save processed json '''
         if write_to_json is True:
             print('[encode_reports_from_dir] Process done. Saving to json file...')
             # Save json data to file
             # it's gonna be too large, use separate file to store information as belows
-            for key in self.json_data_paths:
-                with open(self.json_data_paths[key], 'w') as outfile:
-                    json.dump(self.json_data[key], outfile)
+            # for key in self.json_data_paths:
+            #     with open(self.json_data_paths[key], 'w') as outfile:
+            #         json.dump(self.json_data[key], outfile)
+            ThreadPool(__THREADS_NUM__).imap_unordered(self.dump_one_json, list(self.json_data_paths.keys()))
+            # with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+            #     for key in list(self.json_data_paths.keys()):
+            #         executor.submit(self.dump_one_json, key)
         else:
             print('[encode_reports_from_dir] Writing to json file option set to False. Skip saving.')
+
+        self.gen_edge_args_embedding_data()
+        self.gen_node_name_embedding_data()
+
+    def dump_one_json(self, key):
+        with open(self.json_data_paths[key], 'w') as outfile:
+            json.dump(self.json_data[key], outfile)
 
 
     def read_report(self, report_file_path):
@@ -453,9 +553,26 @@ class PrepareData(object):
 
     def load_data_json(self):
         for key in self.json_data_paths:
-                with open(self.json_data_paths[key]) as json_file:
-                    print('[load_data_json] Load '+self.json_data_paths[key])
-                    self.json_data[key] = json.load(json_file)
+            with open(self.json_data_paths[key]) as json_file:
+                print('[load_data_json] Load '+self.json_data_paths[key])
+                self.json_data[key] = json.load(json_file)
+    
+    
+    def load_data_json_multithread(self):
+        # results = ThreadPool(__THREADS_NUM__).imap_unordered(self.load_one_json, list(self.json_data_paths.keys()))
+        with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+            for key in list(self.json_data_paths.keys()):
+                executor.submit(self.load_one_json, key)
+        self.g_names = []
+        for node_id in self.json_data['nodes']:
+            self.g_names.append(self.json_data['nodes'][node_id]['graph'])
+
+    def load_one_json(self, key):
+        if os.path.exists(self.json_data_paths[key]):
+            with open(self.json_data_paths[key]) as json_file:
+                print('[load_data_json] Load '+self.json_data_paths[key])
+                self.json_data[key] = json.load(json_file)
+
 
     def add_edge_args_embedding_data(self, flags, label, graph_name):
         flags_data = []
@@ -996,16 +1113,20 @@ class PrepareData(object):
 
 
 
-    def encode_node(self, node):
+    # def encode_node(self, node):
+    def encode_node(self, node_id):
         """
         Encode node information to node attribute
         ----------------------------
             Calculate node attributes (init features)
             All nodes must have same features space.
         """
+        node = self.json_data['nodes'][node_id]
+
         # =======================================
         # Encode node name using Word Embedding
         # =======================================
+        # print('[encode_node]')
 
         # Use name of API to represent each node
         self.nodes_labels = self.nodes_labels + [node['name']]
@@ -1013,7 +1134,9 @@ class PrepareData(object):
         ###################
         # Create graph
         ###################
+        # print('[encode_node] self.graphs_dict.keys()', self.graphs_dict.keys())
         if node['graph'] not in self.graphs_dict.keys():
+            print("\t [encode_node] node['graph']", node['graph'])
             self.graphs_name_to_label[node['graph']] = node['graph_label']
             self.graphs_dict[node['graph']] = DGLGraph(multigraph=True)
             if self.do_draw:
@@ -1058,6 +1181,48 @@ class PrepareData(object):
                 shape = 'box' # api node
             # self.graphs_viz[node['graph']].node('n{}'.format(node['id_in_graph']), self.nodename_to_viz(node['name']), color=self.node_color[self.node_type_code[node['type']]], shape=shape)
             self.graphs_viz[node['graph']].add_node('n{}'.format(node['id_in_graph']), label=self.nodename_to_viz(node['name']), color=self.node_color[self.node_type_code[node['type']]], shape=shape)
+
+        # torch.save(ndata, )
+    
+    def encode_node_process(self):
+        print('[encode_node_process]')
+        results = ThreadPool(__THREADS_NUM__).map(self.encode_node, list(self.json_data['nodes'].keys()))
+
+    def encode_edge_type_process(self, key):
+        print('[encode_edge_type_process]', key)
+        if key == 'proc__file_api':
+            f = self.encode_edge__proc__file_api
+        elif key == 'file__file_api':
+            f = self.encode_edge__file__file_api
+        elif key == 'proc__reg_api':
+            f = self.encode_edge__proc__reg_api
+        elif key == 'reg__reg_api':
+            f = self.encode_edge__reg__reg_api
+        elif key == 'proc__process_api':
+            f = self.encode_edge__proc__process_api
+        elif key == 'proc__other_api':
+            f = self.encode_edge__proc__other_api
+        results = ThreadPool(__THREADS_NUM__).map(f, list(self.json_data[key].keys()))
+
+    def encode_edge__proc__file_api(self, path_id):
+        path = self.json_data['proc__file_api'][path_id]
+        self.encode_edge(path)
+    def encode_edge__file__file_api(self, path_id):
+        path = self.json_data['file__file_api'][path_id]
+        self.encode_edge(path)
+    def encode_edge__proc__reg_api(self, path_id):
+        path = self.json_data['proc__reg_api'][path_id]
+        self.encode_edge(path)
+    def encode_edge__reg__reg_api(self, path_id):
+        path = self.json_data['reg__reg_api'][path_id]
+        self.encode_edge(path)
+    def encode_edge__proc__process_api(self, path_id):
+        path = self.json_data['proc__process_api'][path_id]
+        self.encode_edge(path)
+    def encode_edge__proc__other_api(self, path_id):
+        path = self.json_data['proc__other_api'][path_id]
+        self.encode_edge(path)
+
 
     def encode_edge(self, path):
         """
@@ -1114,8 +1279,8 @@ class PrepareData(object):
         ''' add edge with data to graph '''
         # print("path['graph']", path['graph'])
         # print(self.graphs_dict[path['graph']].number_of_nodes())
-        # print('edata[hel]', edata['hel'].shape)
         self.graphs_dict[path['graph']].add_edge(path['from_in_graph'], path['to_in_graph'], data=edata)
+
         if self.do_draw:
             if len(self.args_to_str(path['args'])) > 0:
                 # self.graphs_viz[path['graph']].edge('n{}'.format(path['from_in_graph']), 'n{}'.format(path['to_in_graph']), label='{}'.format(self.args_to_str(path['args'])))
@@ -1126,6 +1291,7 @@ class PrepareData(object):
 
 
     def gen_vocab_and_corpus(self):
+        print('[gen_vocab_and_corpus] self.vocab_path', self.vocab_path, self.vocab_path_node, self.vocab_path_edge)
         # first create dictionary
         if not os.path.isdir(self.vocab_path):
             os.makedirs(self.vocab_path)
@@ -1151,15 +1317,11 @@ class PrepareData(object):
 
     def train_and_load_embedding(self):
         ''' Save all corpus to transform '''
-        print('[train_and_load_embedding] self.prepare_word_embedding', self.prepare_word_embedding, 'self.train_embedder', self.train_embedder)
         if self.prepare_word_embedding:
+            # print('[train_and_load_embedding] prepare_word_embedding, self.edge_args_embedding_data_csv', self.edge_args_embedding_data_csv)
             if self.train_embedder:
-                print('[train_and_load_embedding] prepare')
                 # self.edge_embedder.prepare(self.edge_args_embedding_data_csv, self.edge_args_embedding_data_csv__cls, self.train_list_name, self.test_list_name, self.flags_keys)
                 # self.node_embedder.prepare(self.node_name_embedding_data_csv, self.node_name_embedding_data_csv__cls, self.train_list_name, self.test_list_name)
-                # print('[train_and_load_embedding] self.edge_args_embedding_data_csv', self.edge_args_embedding_data_csv)
-                # print('[train_and_load_embedding] self.train_list_name', self.train_list_name)
-                # print('[train_and_load_embedding] self.test_list_name', self.test_list_name)
                 self.edge_embedder.prepare(self.edge_args_embedding_data_csv, self.train_list_name, self.test_list_name, self.flags_keys)
                 self.node_embedder.prepare(self.node_name_embedding_data_csv, self.train_list_name, self.test_list_name)
 
@@ -1174,16 +1336,16 @@ class PrepareData(object):
 
         if self.train_embedder:
             ''' Train embedding for edge arguments and node names '''
-            self.word_to_ix_edge, word_dict_edge = self.edge_embedder.train()
-            self.word_to_ix_node, word_dict_node = self.node_embedder.train()
+            self.word_to_ix_edge, word_dict_edge = self.edge_embedder.train(preprocess_level=self.preprocess_level)
+            self.word_to_ix_node, word_dict_node = self.node_embedder.train(preprocess_level=self.preprocess_level)
             ''' Load on this whole corpus '''
-            self.edge_embedder.load(load_train_test_set=False)
-            self.node_embedder.load(load_train_test_set=False)
+            self.edge_embedder.load(load_train_test_set=False, preprocess_level=self.preprocess_level)
+            self.node_embedder.load(load_train_test_set=False, preprocess_level=self.preprocess_level)
         else:
             ''' Load tf-idf '''
             print('\n---------------- [train_and_load_embedding] Load vectorizer')
-            self.word_to_ix_edge, word_dict_edge = self.edge_embedder.load()
-            self.word_to_ix_node, word_dict_node = self.node_embedder.load()
+            self.word_to_ix_edge, word_dict_edge = self.edge_embedder.load(preprocess_level=self.preprocess_level)
+            self.word_to_ix_node, word_dict_node = self.node_embedder.load(preprocess_level=self.preprocess_level)
 
         for w in word_dict_node:
             # print('w', w)
@@ -1219,11 +1381,9 @@ class PrepareData(object):
             n_num = 0
             n_tot = len(self.json_data['nodes'])
             # self.embed_nodes = nn.Embedding(n_tot, 1)
-            print('[encode_data] encode_node')
             for node_id in self.json_data['nodes']:
-                node = self.json_data['nodes'][node_id]
-                # print('encode_node ', node)
-                self.encode_node(node)
+                # node = self.json_data['nodes'][node_id]
+                self.encode_node(node_id)
                 n_num += 1
                 if n_num % 100000 == 0 or n_num == n_tot:
                     print('\t [encode_data] {}/{}'.format(n_num, n_tot))
@@ -1243,9 +1403,53 @@ class PrepareData(object):
                     if p_num % 100000 == 0 or p_num == p_tot:
                         print('\t [encode_data] {}/{}'.format(p_num, p_tot))
 
+        # pn = Process(target=self.encode_node_process)
+        # pn.start()
+        # pn.join()
+        # self.encode_node_process()
+        
+        # if 'nodes' in self.json_data.keys():
+        #     with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+        #         for node_id in self.json_data['nodes']:
+        #             node = self.json_data['nodes'][node_id]
+        #             executor.submit(self.encode_node, node)
 
-        with open(self.pickle_folder+'/all_nodes.txt', 'w') as f:
-            f.write('\n'.join(self.all_nodes))
+        # print('[encode_data] self.graphs_dict', self.graphs_dict.keys())
+
+        # for key in self.json_data:
+        #     if key != 'nodes':
+        #         # pe = Process(target=self.encode_edge_type_process, args=(key,))
+        #         # pe.start()
+        #         # pe.join()
+
+        #         # with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+        #         #     for path_id in self.json_data[key]:
+        #         #         path = self.json_data[key][path_id]
+        #         #         executor.submit(self.encode_edge, path)
+
+        #         p_num = 0
+        #         p_tot = len(self.json_data[key])
+        #         # self.embed_edges = nn.Embedding(p_tot, 1)
+        #         print('[encode_data] encode_edge type '+key)
+        #         # print(self.json_data[key], key)
+        #         for path_id in self.json_data[key]:
+        #             path = self.json_data[key][path_id]
+        #             # print('encode_edge ', path)
+        #             self.encode_edge(path)
+        #             p_num += 1
+        #             if p_num % 100000 == 0 or p_num == p_tot:
+        #                 print('\t [encode_data] {}/{}'.format(p_num, p_tot))
+
+        # with open(self.pickle_folder+'/all_nodes.txt', 'w') as f:
+        #     f.write('\n'.join(self.all_nodes))
+
+
+
+    def create_graph_from_report_multithread(self, report_file_path):
+        report_dir_name = os.path.basename(os.path.dirname(report_file_path))
+        report_file_name = os.path.basename(report_file_path)
+        g_name = '{}__{}'.format(report_dir_name, report_file_name)
+        self.create_graph_from_report(g_name, report_dir_name)
 
 
 
@@ -1254,52 +1458,141 @@ class PrepareData(object):
             print('[create_graph_from_report]', g_name+' encoded ('+self.graph_folder+'/'+g_name.split('.')[0]+'). Skip')
             return
         print('[create_graph_from_report] encode', g_name)
+
         if 'nodes' in self.json_data.keys():
             n_num = 0
             n_tot = len(self.json_data['nodes'])
             # self.embed_nodes = nn.Embedding(n_tot, 1)
-            for node_id in self.json_data['nodes']:
-                node = self.json_data['nodes'][node_id]
-                if node['graph'] != g_name:
-                    continue
-                else:
-                    print('\t [create_graph_from_report] node graph', node['graph'], g_name)
-                    self.encode_node(node)
-                    n_num += 1
-                    if n_num % 100000 == 0 or n_num == n_tot:
-                        print('\t [create_graph_from_report] {}/{}'.format(n_num, n_tot))
+
+            # nodes = []
+            # for node_id in self.json_data['nodes']:
+            #     node = self.json_data['nodes'][node_id]
+            #     if node['graph'] != g_name:
+            #         continue
+            #     else:
+            #         nodes.append(node)
+            # results = ThreadPool(__THREADS_NUM__).map(self.encode_node, nodes)
+            with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+                for node_id in self.json_data['nodes']:
+                    node = self.json_data['nodes'][node_id]
+                    if node['graph'] != g_name:
+                        continue
+                    else:
+                        executor.submit(self.encode_node, node)
+            
+            # for node_id in self.json_data['nodes']:
+            #     node = self.json_data['nodes'][node_id]
+            #     if node['graph'] != g_name:
+            #         continue
+            #     else:
+            #         # print('\t [create_graph_from_report] node graph', node['graph'], g_name)
+            #         self.encode_node(node)
+            #         n_num += 1
+            #         if n_num % 100000 == 0 or n_num == n_tot:
+            #             print('\t [create_graph_from_report] {}/{}'.format(n_num, n_tot))
         
         for key in self.json_data:
             if key != 'nodes':
                 p_num = 0
                 p_tot = len(self.json_data[key])
                 # self.embed_edges = nn.Embedding(p_tot, 1)
+
+                paths = []
                 for path_id in self.json_data[key]:
                     path = self.json_data[key][path_id]
                     if path['graph'] != g_name:
                         continue
                     else:
-                        # print('\t edge', path)
-                        self.encode_edge(path)
-                        p_num += 1
-                        if p_num % 100000 == 0 or p_num == p_tot:
-                            print('\t [create_graph_from_report] {}/{}'.format(p_num, p_tot))
+                        paths.append(path)
+                results = ThreadPool(__THREADS_NUM__).map(self.encode_edge, paths)
 
-        g_label = self.graphs_name_to_label[g_name]
+                # with ThreadPoolExecutor(max_workers=__THREADS_NUM__) as executor:
+                #     for path_id in self.json_data[key]:
+                #         path = self.json_data[key][path_id]
+                #         if path['graph'] != g_name:
+                #             continue
+                #         else:
+                #             executor.submit(self.encode_edge, path)
+
+                # for path_id in self.json_data[key]:
+                #     path = self.json_data[key][path_id]
+                #     if path['graph'] != g_name:
+                #         continue
+                #     else:
+                #         # print('\t edge', path)
+                #         self.encode_edge(path)
+                #         p_num += 1
+                #         if p_num % 100000 == 0 or p_num == p_tot:
+                #             print('\t [create_graph_from_report] {}/{}'.format(p_num, p_tot))
+
+        if g_name not in self.graphs_name_to_label:
+            print('\t [create_graph_from_report]', g_name, 'do not have any nodes. Skip')
+            return
+
+        # g_label = self.graphs_name_to_label[g_name]
         graph = self.graphs_dict[g_name]
 
         if not graph.edata:
             del self.graphs_name_to_label[g_name]
             del self.graphs_dict[g_name]
 
-        print('[create_graph_from_report] * Save graph to', os.path.join(self.graph_folder, g_name.split('.')[0]))
-        save_pickle(graph, os.path.join(self.graph_folder, g_name.split('.')[0]))
+        print('[create_graph_from_report] * Save graph to', os.path.join(self.graph_folder, g_label, g_name.split('.')[0]))
+        save_pickle(graph, os.path.join(self.graph_folder, g_label, g_name.split('.')[0]))
 
         if self.do_draw:
-            gdot_path = '{}/{}/{}'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name)
+            # gdot_path = '{}/{}/{}'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name)
+            gdot_path = '{}/{}'.format(self.graph_viz_dir, g_name)
             print('[create_graph_from_report] ** Output graphviz', gdot_path)
             nx.drawing.nx_pydot.write_dot(self.graphs_viz[g_name], gdot_path)
             # self.graphs_viz[g_name].render(filename=gdot_path)
+            (graph,) = pydot.graph_from_dot_file(gdot_path)
+            print('[create_graphs] write_png')
+            graph.write_png('{}/{}.png'.format(self.graph_viz_dir, g_name))
+        return g_name
+
+    
+    def merge_graphs_extension(self, dirpath):
+        k = 0
+        for g_file in os.listdir(dirpath):
+            k += 1
+            g_label = g_file.split('__')[0]
+            g_name = g_file+'.json'
+            print('[merge_graphs]', k, 'graph path', os.path.join(dirpath, g_file))
+            graph = load_pickle(os.path.join(dirpath, g_file))
+
+            n_nodes = graph.number_of_nodes()
+            if n_nodes > self.max_n_nodes:
+                self.max_n_nodes = n_nodes
+
+            self.graphs.append(graph)
+            self.graphs_names.append(g_name)
+            self.graphs_labels.append(g_label)
+
+    def merge_graphs(self):
+        ##############################
+        # Append to graphs list
+        ##############################
+        print('self.graph_folder', self.graph_folder)
+        if self.has_label is True:
+            for lbl in os.listdir(self.graph_folder):
+                if not os.path.isdir(self.graph_folder+'/'+lbl):
+                    continue
+                self.merge_graphs_extension(dirpath=self.graph_folder+'/'+lbl)
+        else:
+                self.merge_graphs_extension(dirpath=self.graph_folder)
+
+        self.save_pickle_data()
+        num_entities = len(set(self.nodes_labels))
+        num_rels = len(set(self.edges_labels))
+
+        # Save additional data
+        save_pickle(num_entities, os.path.join(self.pickle_folder, N_ENTITIES))
+        save_pickle(num_rels, os.path.join(self.pickle_folder, N_RELS))
+        save_pickle(self.max_n_nodes, os.path.join(self.pickle_folder, MAX_N_NODES))
+
+        self.data_dortmund_format[N_ENTITIES] = num_entities
+        self.data_dortmund_format[N_RELS] = num_rels
+        self.data_dortmund_format[MAX_N_NODES] = self.max_n_nodes
 
 
     def create_graphs(self):
@@ -1358,22 +1651,23 @@ class PrepareData(object):
                     # plt.savefig('data/graphs/{}.png'.format(g_name))
                     # print(self.graphs_viz[g_name].source)
 
-                    gdot_path = '{}/{}/{}'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name)
+                    # gdot_path = '{}/{}/{}'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name)
+                    gdot_path = '{}/{}'.format(self.graph_viz_dir, g_name)
                     print('[create_graphs] ** Output graphviz', gdot_path)
                     # self.graphs_viz[g_name].render(filename=gdot_path)
                     nx.drawing.nx_pydot.write_dot(self.graphs_viz[g_name], gdot_path)
                     (graph,) = pydot.graph_from_dot_file(gdot_path)
                     print('[create_graphs] write_png')
-                    # graph.write_png('{}/{}/{}.png'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name))
+                    graph.write_png('{}/{}/{}.png'.format(self.graph_viz_dir, os.path.basename(self.reports_parent_dir_path), g_name))
 
                 gnum += 1
 
         # print(self.graphs)
 
+        self.save_pickle_data()
+
         num_entities = len(set(self.nodes_labels))
         num_rels = len(set(self.edges_labels))
-
-        self.save_pickle_data()
 
         # Save additional data
         save_pickle(num_entities, os.path.join(self.pickle_folder, N_ENTITIES))
@@ -1430,14 +1724,10 @@ class PrepareData(object):
         Load data from pickle files
         """
         print('[load_from_pickle]', os.path.join(self.pickle_folder, GRAPH))
-        print('[load_from_pickle] graphs_name_train', os.path.join(self.pickle_folder, 'graphs_name_train'))
+        print('[load_from_pickle]', GNAMES, os.path.join(self.pickle_folder, GNAMES))
         self.data_dortmund_format = {
-            # GRAPH: load_pickle(os.path.join(self.pickle_folder, GRAPH)),
-            # GNAMES: load_pickle(os.path.join(self.pickle_folder, GNAMES)),
-            'graphs_train': load_pickle(os.path.join(self.pickle_folder, 'graphs_train')),
-            'graphs_name_train': load_pickle(os.path.join(self.pickle_folder, 'graphs_name_train')),
-            'graphs_test': load_pickle(os.path.join(self.pickle_folder, 'graphs_test')),
-            'graphs_name_test': load_pickle(os.path.join(self.pickle_folder, 'graphs_name_test')),
+            GRAPH: load_pickle(os.path.join(self.pickle_folder, GRAPH)),
+            GNAMES: load_pickle(os.path.join(self.pickle_folder, GNAMES)),
             N_ENTITIES: load_pickle(os.path.join(self.pickle_folder, N_ENTITIES)),
             N_RELS: load_pickle(os.path.join(self.pickle_folder, N_RELS)),
             MAX_N_NODES: load_pickle(os.path.join(self.pickle_folder, MAX_N_NODES)),
@@ -1445,9 +1735,7 @@ class PrepareData(object):
         }
         if self.has_label is True:
             self.data_dortmund_format[N_CLASSES] = load_pickle(os.path.join(self.pickle_folder, N_CLASSES))
-            # self.data_dortmund_format[LABELS] = torch.load(os.path.join(self.pickle_folder, LABELS))
-            self.data_dortmund_format['labels_train'] = torch.load(os.path.join(self.pickle_folder, 'labels_train'))
-            self.data_dortmund_format['labels_test'] = torch.load(os.path.join(self.pickle_folder, 'labels_test'))
+            self.data_dortmund_format[LABELS] = torch.load(os.path.join(self.pickle_folder, LABELS))
             self.data_dortmund_format[LABELS_TXT] = load_pickle(os.path.join(self.pickle_folder, LABELS_TXT))
 
         return self.data_dortmund_format
