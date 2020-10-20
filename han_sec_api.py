@@ -49,7 +49,7 @@ from prep_data_n import PrepareData
 # Overwrite
 __REVERSE_EDGE__ = True
 __APPEND_NID_EID__ = True
-__DO_DRAW__ = True
+__DO_DRAW__ = False
 
 
 # CONFIG_PATH = cf.__ROOT__+'/models/configs/config_edGNN_graph_class.json'
@@ -126,7 +126,7 @@ class HAN_module:
         # data = self.prep_data.load_data()
 
         if data is None:
-            return None, self.args
+            return None
         
         data = to_cuda(data) if cuda is True else data
         return data
@@ -195,7 +195,9 @@ if __name__ == "__main__":
 
     tasks = [9819]
 
-    tasks = None
+    # tasks = None
+    # han = HAN_module(task_ids=tasks, report_dir_name='game_Linh', report_file_name=None)
+
 
     han = HAN_module(task_ids=tasks, 
                     #  cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
@@ -204,6 +206,16 @@ if __name__ == "__main__":
                      report_dir_name='9819_malware__new', 
                      report_file_name=None)
     cuda = True
+
+    '''
+    # tasks = [9249, 9254, 9255] #
+    # tasks = [9256, 9257, 9258, 9259] # 0 1 1 1
+    # tasks = [9260, 9261, 9262]
+    tasks = [9305]
+    han = HAN_module(task_ids=tasks)
+
+    cuda = False
+    '''
 
     data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
     if data is None:
