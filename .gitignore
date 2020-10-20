@@ -14,6 +14,7 @@ data_json
 data_pickle
 data_vocab
 data_graphs
+data_graphviz
 checkpoints
 models/configs
 
@@ -24,6 +25,7 @@ __archived/*
 
 data/graphviz/*
 data_graphs/*
+data_graphviz/*
 data_embedding/*
 data_json/*
 data_pickle/*
