@@ -139,6 +139,10 @@ class App:
         if odir is None:
             odir = 'output/'+time.strftime("%Y-%m-%d_%H-%M-%S")
         self.odir = odir
+    
+    def load_data(self, data):
+        self.data = data
+
 
 
     def write_nid_eid(self, g):
@@ -190,6 +194,7 @@ class App:
         print('-------- [App][predict] Predict --------')
         graphs = self.data[GRAPH]
         print('*** len graphs', len(graphs))
+        print('[App][predict] self.data', self.data)
 
         # print('[App][predict] graphs', graphs)
         batches = dgl.batch(graphs)

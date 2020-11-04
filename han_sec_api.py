@@ -164,6 +164,8 @@ class HAN_module:
                             gdot_path=gdot_path
                         )
             self.app.load_model_state(model_path=self.args['checkpoint_file'])
+        else:
+            self.load_data(data)
         return self.app.predict()
 
 
@@ -257,9 +259,11 @@ if __name__ == "__main__":
 
 
     han = HAN_module(cuckoo_analysis_dir=rp_folder)
-    task_ids_list = [ [2861, 2863, 2870],
-                      [2861, 2863],
-                      [2863, 2870]
+    task_ids_list = [ [10204],
+                      [10205]
+                    #   [2861, 2863, 2870],
+                    #   [2861, 2863],
+                    #   [2863, 2870]
                     ]
     for task_ids in task_ids_list:
         han.set_task_ids(task_ids=task_ids)
@@ -267,6 +271,7 @@ if __name__ == "__main__":
         if data is None:
             print('Graph can\'t be created!')
         else:
+            print('-------- Call predict_files for', task_ids, '--------')
             labels, scores = han.predict_files(data, cuda=cuda)
             print('labels', labels)
             print('scores', scores)
