@@ -44,9 +44,9 @@ class App:
         if model_src_path is not None:
             sys.path.insert(1, model_src_path)
             print('*** model_src_path', model_src_path)
-            from model_edgnn import Model
+            from model_edgnn_o import Model
         else:
-            from models.model import Model
+            from models.model_edgnn_o import Model
 
         self.data = data
         self.model_config = model_config
@@ -59,10 +59,10 @@ class App:
         with open(mapping_path, 'r') as f:
             self.mapping = json.load(f)
 
-        print('[App][__init__] GNAMES', GNAMES)
-        print('[App][__init__] self.data', self.data)
+        # print('[App][__init__] GNAMES', GNAMES)
+        # print('[App][__init__] self.data', self.data)
         self.graphs_names = self.data[GNAMES]
-        print('[App][__init__] self.graphs_names', self.graphs_names)
+        # print('[App][__init__] self.graphs_names', self.graphs_names)
 
         self.data_graph = self.data[GRAPH]
 
@@ -98,8 +98,6 @@ class App:
                            n_entities=data_nentities,
                            is_cuda=self.is_cuda,
                            batch_size=1,
-                           json_path=json_path,
-                           vocab_path=vocab_path,
                            model_src_path=model_src_path,
                            gdot_path=gdot_path)
 
@@ -181,14 +179,15 @@ class App:
         print('\t(2) sum alpha', torch.sum(alpha))
 
 
-    def predict(self, model_path=''):
+    def load_model_state(self, model_path=''):
         try:
-            print('*** Load pre-trained model '+model_path+' ***')
+            print('[App][load_model_state] *** Load pre-trained model '+model_path+' ***')
             self.model = load_checkpoint(self.model, model_path, self.is_cuda)
         except ValueError as e:
             print('Error while loading the model.', e)
 
-        print('\n[App][predict] Predict')
+    def predict(self):
+        print('-------- [App][predict] Predict --------')
         graphs = self.data[GRAPH]
         print('*** len graphs', len(graphs))
 

@@ -39,7 +39,9 @@ from han_sec_app import App
 # newest -----------------
 # CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
 
-CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/2020-10-03_07-06-06/config_edGNN_graph_class.json'
+CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=10_lv=word/2020-10-12_08-14-43/edgnn.json'
+CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=10_lv=word/2020-10-12_15-30-27/edgnn.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/9691/config_edGNN_graph_class.json'
 
 prep_path = os.path.dirname(CONFIG_PATH)
 print('prep_path', prep_path)
@@ -48,7 +50,7 @@ from prep_data_n import PrepareData
 
 # Overwrite
 __REVERSE_EDGE__ = True
-__APPEND_NID_EID__ = True
+__APPEND_NID_EID__ = False
 __DO_DRAW__ = False
 
 
@@ -58,12 +60,27 @@ __DO_DRAW__ = False
 
 
 class HAN_module:
-    def __init__(self, task_ids=None, cuckoo_analysis_dir=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
-        self.task_ids = task_ids
-        self.load_args(task_ids, report_dir_name, report_dir_path, report_file_name)
+    def __init__(self, cuckoo_analysis_dir=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
+        self.load_args(report_dir_name, report_dir_path, report_file_name)
         self.prep_data = PrepareData(self.args, cuckoo_analysis_dir=cuckoo_analysis_dir)
+        self.app = None
     
-    def load_args(self, task_ids=None, report_dir_name=None, report_dir_path=None, report_file_name=None):
+    def set_task_ids(self, task_ids=None):
+        self.task_ids = task_ids
+        if task_ids is not None:
+            task_ids = [str(tid) for tid in task_ids]
+            batch_task_name = '-'.join(task_ids)
+            self.args["input_report_folder"] = cf.__ROOT__+'/api_tasks/data_report'
+            self.args["input_data_folder"] = cf.__ROOT__+'/api_tasks/data_json/{}'.format(batch_task_name)
+            self.args["input_pickle_folder"] = cf.__ROOT__+'/api_tasks/data_pickle/{}'.format(batch_task_name)
+
+            self.prep_data.reset()
+            self.prep_data.set_dir(self.args)
+
+        else:
+            print('[set_task_ids] task_ids cannot be None !')
+    
+    def load_args(self, report_dir_name=None, report_dir_path=None, report_file_name=None):
         self.args = read_params(CONFIG_PATH, verbose=False)
 
         self.report_dir_name = report_dir_name
@@ -74,16 +91,13 @@ class HAN_module:
 
         self.args['from_pickle'] = False
 
-        if task_ids is not None:
-            task_ids = [str(tid) for tid in task_ids]
-            batch_task_name = '-'.join(task_ids)
-            self.args["input_report_folder"] = cf.__ROOT__+'/api_tasks/data_report'
-            self.args["input_data_folder"] = cf.__ROOT__+'/api_tasks/data_json/{}'.format(batch_task_name)
-            self.args["input_pickle_folder"] = cf.__ROOT__+'/api_tasks/data_pickle/{}'.format(batch_task_name)
-        else:
-            self.args["input_report_folder"] = cf.__ROOT__+'/api_tasks/data_report'
-            self.args["input_data_folder"] = cf.__ROOT__+'/api_tasks/data_json/{}'.format(report_dir_name)
-            self.args["input_pickle_folder"] = cf.__ROOT__+'/api_tasks/data_pickle/{}'.format(report_dir_name)
+
+        # At initialization, task_ids = None.
+        # set folders to these:
+        self.args["input_report_folder"] = cf.__ROOT__+'/api_tasks/data_report'
+        self.args["input_data_folder"] = cf.__ROOT__+'/api_tasks/data_json/{}'.format(report_dir_name)
+        self.args["input_pickle_folder"] = cf.__ROOT__+'/api_tasks/data_pickle/{}'.format(report_dir_name)
+
 
         self.args["mapping_path"] = cf.__ROOT__+'/'+self.args["mapping_path"]
         self.args["train_embedding_path"] = cf.__ROOT__+'/'+self.args["train_embedding_path"]
@@ -133,21 +147,24 @@ class HAN_module:
 
 
     def predict_files(self, data, cuda=True):
-        print('\n*** Start testing ***\n')
+        # print('\n[han_sec_api][predict_files] *** Start testing ***\n')
         learning_config = {'cuda': cuda}
 
         graphviz_dir_path = self.args["input_pickle_folder"].replace('data_pickle', 'data_graphviz')
         gdot_path = None if self.args['do_draw'] is False else '{}/{}'.format(graphviz_dir_path, data[GNAMES][0])
 
-        app = App(data, model_config=self.model_config, learning_config=learning_config,
-                    pretrained_weight=self.args['checkpoint_file'], early_stopping=True, patience=20, 
-                    json_path=self.args['input_data_folder'], pickle_folder=self.args['input_pickle_folder'], vocab_path=self.args['vocab_path'],
-                    mapping_path=self.args['mapping_path'],
-                    model_src_path=self.odir,
-                    append_nid_eid=__APPEND_NID_EID__,
-                    gdot_path=gdot_path
-                )
-        return app.predict(self.args['checkpoint_file'])
+        if self.app is None:
+            self.app = App(data, model_config=self.model_config,
+                            learning_config=learning_config,
+                            pretrained_weight=self.args['checkpoint_file'], early_stopping=True, patience=20, 
+                            json_path=self.args['input_data_folder'], pickle_folder=self.args['input_pickle_folder'], vocab_path=self.args['vocab_path'],
+                            mapping_path=self.args['mapping_path'],
+                            model_src_path=self.odir,
+                            append_nid_eid=__APPEND_NID_EID__,
+                            gdot_path=gdot_path
+                        )
+            self.app.load_model_state(model_path=self.args['checkpoint_file'])
+        return self.app.predict()
 
 
 
@@ -183,6 +200,7 @@ if __name__ == "__main__":
 
 
 
+    cuda = True
 
     # benigns
     tasks = [1746, 1748, 1750, 1751, 1754, 1756]
@@ -193,34 +211,62 @@ if __name__ == "__main__":
     tasks = [1746, 1748, 1750, 1751, 1754, 1756,
             247, 303, 304, 310, 312, 1655, 1656, 1657, 1659, 1660]
 
-    tasks = [9819]
+    # tasks = [9819]
 
-    # tasks = None
+    tasks = None
     # han = HAN_module(task_ids=tasks, report_dir_name='game_Linh', report_file_name=None)
 
 
-    han = HAN_module(task_ids=tasks, 
-                    #  cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
-                    #  report_dir_name='hh', 
-                     cuckoo_analysis_dir='/media/tunguyen/TuTu_Passport/MTAAV/HAN-sec-new/api_tasks/data_report', 
-                     report_dir_name='9819_malware__new', 
-                     report_file_name=None)
-    cuda = True
+    rp_folder = '/media/tunguyen/TuTu_Passport/MTAAV/HAN-sec-new/api_tasks/data_report'
+    rp_dir_name = '2870_benign'
+    rp_dir_name = 'game_Linh'
+    rp_dir_name = '2863_benign'
+    rp_dir_name = '9819_malware__new'
+    # rp_dir_name = 'mal'
 
-    '''
-    # tasks = [9249, 9254, 9255] #
-    # tasks = [9256, 9257, 9258, 9259] # 0 1 1 1
-    # tasks = [9260, 9261, 9262]
-    tasks = [9305]
-    han = HAN_module(task_ids=tasks)
+    # If task_ids != None:
+    #    report_dir_name, report_file_name, report_dir_path = None
+    #    cuckoo_analysis_dir != None
+    # han = HAN_module(cuckoo_analysis_dir=rp_folder, 
+    #                  report_dir_name=rp_dir_name, 
+    #                  report_file_name=None
+    #                 #  cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
+    #                 #  report_dir_name='hh', 
+    #                 )
 
-    cuda = False
-    '''
+    # '''
+    # # tasks = [9249, 9254, 9255] #
+    # # tasks = [9256, 9257, 9258, 9259] # 0 1 1 1
+    # # tasks = [9260, 9261, 9262]
+    # tasks = [9305]
+    # han = HAN_module(task_ids=tasks)
 
-    data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
-    if data is None:
-        print('Graph can\'t be created!')
-    else:
-        labels, scores = han.predict_files(data, cuda=cuda)
-        print('labels', labels)
-        print('scores', scores)
+    # cuda = False
+    # '''
+
+    # data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
+    # if data is None:
+    #     print('Graph can\'t be created!')
+    # else:
+    #     labels, scores = han.predict_files(data, cuda=cuda)
+    #     print('labels', labels)
+    #     print('scores', scores)
+
+
+
+
+
+    han = HAN_module(cuckoo_analysis_dir=rp_folder)
+    task_ids_list = [ [2861, 2863, 2870],
+                      [2861, 2863],
+                      [2863, 2870]
+                    ]
+    for task_ids in task_ids_list:
+        han.set_task_ids(task_ids=task_ids)
+        data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
+        if data is None:
+            print('Graph can\'t be created!')
+        else:
+            labels, scores = han.predict_files(data, cuda=cuda)
+            print('labels', labels)
+            print('scores', scores)

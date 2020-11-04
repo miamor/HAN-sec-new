@@ -3,8 +3,16 @@ import torch
 from utils.utils import *
 import random
 
+
+SKIP_SYS = False
+
+
 data_dir_src = 'data_pickle/reverse/TuTu__vocabtutu__iapi__tfidf__topk=10_lv=word'
-data_dir_dst = 'data_pickle/reverse/TuTu_nosys__vocabtutu__iapi__tfidf__topk=10_lv=word'
+# data_dir_dst = 'data_pickle/reverse/TuTu_nosys__vocabtutu__iapi__tfidf__topk=10_lv=word'
+data_dir_dst = 'data_pickle/reverse/TuTu__vocabtutu__iapi__tfidf__topk=10_lv=word__new'
+
+if not os.path.exists(data_dir_dst):
+    os.makedirs(data_dir_dst)
 
 
 bin_root = '../../MTAAV_data/bin/TuTu/'
@@ -49,7 +57,9 @@ gnames = [gnames[i] for i in random_indices]
 
 
 
-n_bgn = (lbls == 0).sum().item() - 433
+n_bgn = (lbls == 0).sum().item()
+if SKIP_SYS:
+    n_bgn -= 433
 n_mal = (lbls == 1).sum().item()
 print('bgn', n_bgn)
 print('mal', n_mal)
@@ -106,9 +116,11 @@ for k,lbl in enumerate(lbls):
     g_name = os.path.splitext(g_name)[0] # remove last .json of report filename
 
     fnr = list(filter(None, g_name.split('__')))
-    if lbl == 0 and len(fnr) <= 3:
-        print('sys file. SKIP', fnr)
-        set = None
+    
+    if SKIP_SYS:
+        if lbl == 0 and len(fnr) <= 3:
+            print('sys file. SKIP', fnr)
+            set = None
 
     bin_name = '__'.join(fnr[2:])
     if lbl == 1 and len(fnr) <= 3:
