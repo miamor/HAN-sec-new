@@ -39,7 +39,8 @@ from han_sec_app import App
 # newest -----------------
 # CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
 
-CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/2020-10-03_07-06-06/config_edGNN_graph_class.json'
+# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/2020-10-03_07-06-06/config_edGNN_graph_class.json'
+CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/9691/config_edGNN_graph_class.json'
 
 prep_path = os.path.dirname(CONFIG_PATH)
 print('prep_path', prep_path)
@@ -200,12 +201,13 @@ if __name__ == "__main__":
 
 
     han = HAN_module(task_ids=tasks, 
-                    #  cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
-                    #  report_dir_name='hh', 
-                     cuckoo_analysis_dir='/media/tunguyen/TuTu_Passport/MTAAV/HAN-sec-new/api_tasks/data_report', 
-                     report_dir_name='9819_malware__new', 
+                     cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
+                     report_dir_name='9819',
+                     # report_dir_name='hh', 
+                     # cuckoo_analysis_dir='/media/tunguyen/TuTu_Passport/MTAAV/HAN-sec-new/api_tasks/data_report', 
+                     # report_dir_name='9819_malware__new', 
                      report_file_name=None)
-    cuda = True
+    cuda = False
 
     '''
     # tasks = [9249, 9254, 9255] #
