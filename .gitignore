@@ -8,13 +8,8 @@ api_tasks
 __archived
 */__archived
 
-data/graphviz
-data_embedding
-data_json
-data_pickle
-data_vocab
-data_graphs
-data_graphviz
+**/data*
+**/data
 checkpoints
 models/configs
 
@@ -23,13 +18,8 @@ __save_results/*
 api_tasks/*
 __archived/*
 
-data/graphviz/*
-data_graphs/*
-data_graphviz/*
-data_embedding/*
-data_json/*
-data_pickle/*
-data_vocab/*
+**/data*/*
+**/data/*
 
 models/configs/*
 models/configs/*.json
