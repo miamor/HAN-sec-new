@@ -41,7 +41,7 @@ from han_sec_app import App
 
 CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=10_lv=word/2020-10-12_08-14-43/edgnn.json'
 CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=10_lv=word/2020-10-12_15-30-27/edgnn.json'
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/9691/config_edGNN_graph_class.json'
+CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/9691/config_edGNN_graph_class.json'
 
 prep_path = os.path.dirname(CONFIG_PATH)
 print('prep_path', prep_path)
@@ -222,19 +222,19 @@ if __name__ == "__main__":
     rp_folder = '/media/tunguyen/TuTu_Passport/MTAAV/HAN-sec-new/api_tasks/data_report'
     rp_dir_name = '2870_benign'
     rp_dir_name = 'game_Linh'
-    rp_dir_name = '2863_benign'
-    rp_dir_name = '9819_malware__new'
+    # rp_dir_name = '2863_benign'
+    # rp_dir_name = '9819_malware__new'
     # rp_dir_name = 'mal'
 
     # If task_ids != None:
     #    report_dir_name, report_file_name, report_dir_path = None
     #    cuckoo_analysis_dir != None
-    # han = HAN_module(cuckoo_analysis_dir=rp_folder, 
-    #                  report_dir_name=rp_dir_name, 
-    #                  report_file_name=None
-    #                 #  cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
-    #                 #  report_dir_name='hh', 
-    #                 )
+    han = HAN_module(cuckoo_analysis_dir=rp_folder, 
+                     report_dir_name=rp_dir_name, 
+                     report_file_name=None
+                    #  cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
+                    #  report_dir_name='hh', 
+                    )
 
     # '''
     # # tasks = [9249, 9254, 9255] #
@@ -246,32 +246,34 @@ if __name__ == "__main__":
     # cuda = False
     # '''
 
-    # data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
-    # if data is None:
-    #     print('Graph can\'t be created!')
-    # else:
-    #     labels, scores = han.predict_files(data, cuda=cuda)
-    #     print('labels', labels)
-    #     print('scores', scores)
+    data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
+    if data is None:
+        print('Graph can\'t be created!')
+    else:
+        labels, scores = han.predict_files(data, cuda=cuda)
+        print('labels', labels)
+        print('scores', scores)
 
 
 
 
 
-    han = HAN_module(cuckoo_analysis_dir=rp_folder)
-    task_ids_list = [ [10204],
-                      [10205]
-                    #   [2861, 2863, 2870],
-                    #   [2861, 2863],
-                    #   [2863, 2870]
-                    ]
-    for task_ids in task_ids_list:
-        han.set_task_ids(task_ids=task_ids)
-        data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
-        if data is None:
-            print('Graph can\'t be created!')
-        else:
-            print('-------- Call predict_files for', task_ids, '--------')
-            labels, scores = han.predict_files(data, cuda=cuda)
-            print('labels', labels)
-            print('scores', scores)
+    # han = HAN_module(cuckoo_analysis_dir=rp_folder)
+    # task_ids_list = [ [9819, 10204], # client
+    #                 #   [10214], [10215], [10216] # client-built, quassar, shell
+    #                 #   [10215], [10216] # quassar, shell
+    #                 [9810, 10181, 10182] # benign
+    #                 #   [2861, 2863, 2870],
+    #                 #   [2861, 2863],
+    #                 #   [2863, 2870]
+    #                 ]
+    # for task_ids in task_ids_list:
+    #     han.set_task_ids(task_ids=task_ids)
+    #     data = han.prepare_files(cuda=cuda) # Microsoft.Build.Tasks.v4.0.dll
+    #     if data is None:
+    #         print('Graph can\'t be created!')
+    #     else:
+    #         print('-------- Call predict_files for', task_ids, '--------')
+    #         labels, scores = han.predict_files(data, cuda=cuda)
+    #         print('labels', labels)
+    #         print('scores', scores)

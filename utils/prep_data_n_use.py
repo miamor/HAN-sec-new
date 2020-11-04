@@ -179,6 +179,13 @@ class PrepareData(object):
         # self.edge_embedder = Doc2Vec_(self.edge_args_emb_trained_path, self.edge_args_emb_corpus_path, self.mapping, vector_size, dm)
         # self.node_embedder = Doc2Vec_(self.node_name_emb_trained_path, self.node_name_emb_corpus_path, self.mapping, vector_size, dm)
 
+
+        # For inference, just do the load embedding right here
+        print('\n[load_data_files] Train & load node/edge embedding')
+        self.train_embedder = False
+        self.from_folder = False
+        self.train_and_load_embedding()
+
         return
 
     def reset(self):
@@ -245,6 +252,41 @@ class PrepareData(object):
         self.node_names_by_graph = {}
         self.flags_keys = []
         self.mapping = {}
+
+
+    def set_dir(self, config):
+        if config['input_report_folder'] is not None:
+            self.reports_parent_dir_path = config['input_report_folder']
+
+        if config['input_data_folder'] is not None:
+            self.final_json_path = config['input_data_folder']
+            data_dir = os.path.dirname(self.final_json_path)
+            if not os.path.isdir(data_dir):
+                os.makedirs(data_dir)
+                
+            json_data_dir = self.final_json_path
+            if not os.path.isdir(json_data_dir):
+                os.makedirs(json_data_dir)
+            for key in self.json_data_paths:
+                self.json_data_paths[key] = json_data_dir+'/'+key+'.json'
+
+        if config['input_pickle_folder'] is not None:
+            self.pickle_folder = config['input_pickle_folder']
+            print('[__init__] self.pickle_folder', self.pickle_folder)
+            if not os.path.isdir(self.pickle_folder):
+                os.makedirs(self.pickle_folder)
+            # copy config file to this
+            shutil.copy(config['config_fpath'], self.pickle_folder)
+            
+            self.graph_folder = self.pickle_folder.replace('data_pickle', 'data_graphs')
+            print('[__init__] self.graph_folder', self.graph_folder)
+            if not os.path.isdir(self.graph_folder):
+                os.makedirs(self.graph_folder)
+
+            self.graph_viz_dir = self.pickle_folder.replace('data_pickle', 'data_graphviz')
+            print('[__init__] self.graph_viz_dir', self.graph_viz_dir)
+            if not os.path.isdir(self.graph_viz_dir):
+                os.makedirs(self.graph_viz_dir)
 
 
     def load_data(self, from_folder=False, from_json=False, from_pickle=False):
@@ -363,10 +405,10 @@ class PrepareData(object):
         else:
             print('[load_data_files] Writing to json file option set to False. Skip saving.')
 
-        print('\n[load_data_files] Train & load node/edge embedding')
-        self.train_embedder = False
-        self.from_folder = False
-        self.train_and_load_embedding()
+        # print('\n[load_data_files] Train & load node/edge embedding')
+        # self.train_embedder = False
+        # self.from_folder = False
+        # self.train_and_load_embedding()
 
         print('\n[load_data_files] Encode nodes & edges')
         self.encode_data()
