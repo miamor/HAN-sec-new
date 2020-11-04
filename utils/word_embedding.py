@@ -331,8 +331,8 @@ class Doc2Vec_(WordEmbedding):
             X_train = self.label_sentences(X_train, 'Train')
             X_test = self.label_sentences(X_test, 'Test')
 
-            self.test_on_set('Train~', X_train, y_train, self.model_dbow, model, 'Train')
-            self.test_on_set('Test~', X_test, y_test, self.model_dbow, model, 'Test')
+            # self.test_on_set('Train~', X_train, y_train, self.model_dbow, model, 'Train')
+            # self.test_on_set('Test~', X_test, y_test, self.model_dbow, model, 'Test')
 
             return self.get_dict_vec()
 
@@ -465,7 +465,7 @@ class TFIDF(WordEmbedding):
             # print('x_train', x_train)
             self.tfidf.fit(x_train)
             x_transformed = self.test_on_set('Train~', x_train, y_train, self.tfidf, model)
-            self.test_on_set('Test~', x_test, y_test, self.tfidf, model)
+            # self.test_on_set('Test~', x_test, y_test, self.tfidf, model)
 
             # self.test_on_set('Corpus~', X, y, self.tfidf, model)
 
