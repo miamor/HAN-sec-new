@@ -39,14 +39,9 @@ from han_sec_app import App
 # newest -----------------
 # CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__merge__edgnn_w__9268__867__vocabnew__tfidf__topk=3/edgnn_n_prep_test_data.json'
 
-<<<<<<< HEAD
 CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=10_lv=word/2020-10-12_08-14-43/edgnn.json'
 CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=10_lv=word/2020-10-12_15-30-27/edgnn.json'
 # CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/9691/config_edGNN_graph_class.json'
-=======
-# CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/2020-10-03_07-06-06/config_edGNN_graph_class.json'
-CONFIG_PATH = cf.__ROOT__+'/__save_results/reverse__TuTu__vocabtutu__iapi__tfidf__topk=3/9691/config_edGNN_graph_class.json'
->>>>>>> c6c69de81db7844820c3363c5e1dd878e140cdc3
 
 prep_path = os.path.dirname(CONFIG_PATH)
 print('prep_path', prep_path)
@@ -222,7 +217,6 @@ if __name__ == "__main__":
     # han = HAN_module(task_ids=tasks, report_dir_name='game_Linh', report_file_name=None)
 
 
-<<<<<<< HEAD
     rp_folder = '/media/tunguyen/TuTu_Passport/MTAAV/HAN-sec-new/api_tasks/data_report'
     rp_dir_name = '2870_benign'
     rp_dir_name = 'game_Linh'
@@ -259,16 +253,6 @@ if __name__ == "__main__":
     #     print('scores', scores)
 
 
-=======
-    han = HAN_module(task_ids=tasks, 
-                     cuckoo_analysis_dir='/home/mtaav/.cuckoo/storage/analyses', 
-                     report_dir_name='9819',
-                     # report_dir_name='hh', 
-                     # cuckoo_analysis_dir='/media/tunguyen/TuTu_Passport/MTAAV/HAN-sec-new/api_tasks/data_report', 
-                     # report_dir_name='9819_malware__new', 
-                     report_file_name=None)
-    cuda = False
->>>>>>> c6c69de81db7844820c3363c5e1dd878e140cdc3
 
 
 
