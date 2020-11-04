@@ -128,8 +128,8 @@ class HAN_module:
 
         self.args['checkpoint_file'] = self.odir+'/checkpoint'
 
-        print('\t [load_args] self.args', self.args)
-        print('\t [load_args] self.odir', self.odir)
+        # print('\t [load_args] self.args', self.args)
+        # print('\t [load_args] self.odir', self.odir)
 
 
     def prepare_files(self, cuda=True):
