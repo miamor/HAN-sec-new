@@ -165,7 +165,7 @@ class HAN_module:
                         )
             self.app.load_model_state(model_path=self.args['checkpoint_file'])
         else:
-            self.load_data(data)
+            self.app.load_data(data)
         return self.app.predict()
 
 
