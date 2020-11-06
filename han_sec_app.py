@@ -191,10 +191,10 @@ class App:
             print('Error while loading the model.', e)
 
     def predict(self):
-        print('-------- [App][predict] Predict --------')
+        print('-------- [App][predict] Predict -------- | len graphs', len(graphs))
         graphs = self.data[GRAPH]
-        print('*** len graphs', len(graphs))
-        print('[App][predict] self.data', self.data)
+        # print('*** len graphs', len(graphs))
+        # print('[App][predict] self.data', self.data)
 
         # print('[App][predict] graphs', graphs)
         batches = dgl.batch(graphs)
