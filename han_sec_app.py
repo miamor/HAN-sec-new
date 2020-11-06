@@ -192,6 +192,7 @@ class App:
 
     def predict(self):
         graphs = self.data[GRAPH]
+        labels = self.data[LABELS]
         print('-------- [App][predict] Predict -------- | len graphs', len(graphs))
         # print('*** len graphs', len(graphs))
         # print('[App][predict] self.data', self.data)
@@ -208,5 +209,19 @@ class App:
         logits = logits.cpu()
         # print('logits', logits)
         scores, indices = torch.max(logits, dim=1)
-        return indices, scores
+
+        final_pred_lbls = []
+        final_pred_scores = []
+        pred_idx = 0
+        for i in range(len(labels)):
+            if labels[i] == -1:
+                final_pred_lbls.append(indices[pred_idx])
+                final_pred_scores.append(scores[pred_idx])
+                pred_idx += 1
+            else:
+                final_pred_lbls.append(labels[i])
+                final_pred_scores.append(0)
+        
+
+        return torch.Tensor(final_pred_lbls), torch.Tensor(final_pred_scores)
 
