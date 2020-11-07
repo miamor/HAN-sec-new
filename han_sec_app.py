@@ -222,6 +222,7 @@ class App:
                 final_pred_lbls.append(labels[i])
                 final_pred_scores.append(0)
         
+        print('[predict] *** labels', len(labels), labels)
         print('[predict] *** final_pred_lbls', final_pred_lbls)
         
         return torch.Tensor(final_pred_lbls), torch.Tensor(final_pred_scores)
