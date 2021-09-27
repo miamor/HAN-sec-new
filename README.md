@@ -1,9 +1,9 @@
 # Using Deep Graph Learning to Improve Dynamic Analysis-based Malware Detection
 
 ## Dataset: 
-- Binary (executables) collection:
+- Binary (executables) collection: (Password: unpackmeifyoucan)
   https://drive.google.com/drive/folders/1JkGfloCdDAaWXLPrSuEnumyMdiZlQdSP?usp=sharing
-- Lists of hashes for each dataset and subset according to the paper are located in `./data`
+- Lists of hashes for each dataset and subset according to the paper are located in `./data` (in drive folder)
 
 ## Other methods implementation:
 - n-gram analyzer: https://github.com/miamor/ngram-analyzer
