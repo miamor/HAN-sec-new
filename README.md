@@ -1,7 +1,7 @@
 # Using Deep Graph Learning to Improve Dynamic Analysis-based Malware Detection
 
 ## Dataset: 
-- Binary (executables) collection: (Password: unpackmeifyoucan)
+- Binary (executables) collection: (Contact me for password: nminhtu.mta@gmail.com)
   https://drive.google.com/drive/folders/1JkGfloCdDAaWXLPrSuEnumyMdiZlQdSP?usp=sharing
 - Lists of hashes for each dataset and subset according to the paper are located in `./data` (in drive folder)
 
